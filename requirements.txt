@@ -1,0 +1,7 @@
+requests 
+numpy==1.23.5 
+pandas==1.5.3 
+scipy==1.13.1 
+geopandas==1.0.1
+apache-airflow 
+apache-airflow-providers-http
