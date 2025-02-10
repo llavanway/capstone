@@ -27,7 +27,7 @@ def check_python_environment():
     return env_info
 
 with DAG(
-    'test_environment_dag',
+    'test_dag',
     default_args=default_args,
     description='DAG for testing Airflow environment',
     schedule_interval=timedelta(days=1),
