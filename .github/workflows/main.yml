@@ -25,9 +25,17 @@ jobs:
         run: |
           git rm -r --cached shapefiles/*
 
+      - name: Check Working Directory
+        run: |
+          ls -a
+
       - name: Change Working Directory
         run: |
           cd ~
+
+      - name: Check Working Directory
+        run: |
+          ls -a
 
       - name: Trigger Airflow DAG
         run: |
