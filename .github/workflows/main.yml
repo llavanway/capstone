@@ -29,6 +29,14 @@ jobs:
         run: |
           ls -a
 
+      - name: Print Working Directory
+        run: |
+          pwd
+
+      - name: Check Docker Config
+        run: |
+          docker ps
+
       # - name: Change Working Directory
       #   run: |
       #     cd ~
