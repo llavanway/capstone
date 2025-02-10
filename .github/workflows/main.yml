@@ -18,36 +18,20 @@ jobs:
         run: |
           docker-compose up -d  # See docker-compose.yml file
 
-      - name: Wait for Docker Container to Start
-        run: sleep 10
+      # - name: Wait for Docker Container to Start
+      #   run: sleep 10
 
       - name: Remove Old Files
         run: |
           git rm -r --cached shapefiles/*
 
-      - name: Check Working Directory
-        run: |
-          ls -a
-
-      - name: Print Working Directory
-        run: |
-          pwd
-
-      - name: Check Docker Config
-        run: |
-          docker ps
-
-      # - name: Change Working Directory
-      #   run: |
-      #     cd ~
-
-      # - name: Check Working Directory
-      #   run: |
-      #     ls -a
-
       - name: Trigger Airflow DAG
         run: |
           docker exec airflow airflow dags trigger test_dag
+
+      - name: Show IP address
+        run: |
+          ifconfig en0
 
       - name: Commit Changes
         run: |
