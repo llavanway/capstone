@@ -1,63 +1,57 @@
-name: Run Capstone Pipeline
+name: Run Airflow Pipeline
 on:
-  workflow_dispatch:  # Manual trigger
+  workflow_dispatch:
+
 jobs:
   run-airflow-pipeline:
     runs-on: self-hosted
+    permissions:
+      contents: write  # Needed for pushing changes
+    
     steps:
-      - uses: actions/checkout@v4
-        with:
-          path: ${{ github.sha }}
-          
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: Configure Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+      
       - name: Set Up Docker
         uses: docker/setup-buildx-action@v2
         
-      - name: Start Airflow with Docker
-        working-directory: ${{ github.sha }}
+      - name: Start Airflow
         run: |
-          docker-compose up -d
+          docker compose up -d
+          # Wait for Airflow webserver to be ready
+          sleep 5
           
-      - name: Remove Old Files
-        working-directory: ${{ github.sha }}
-        run: |
-          if [ -d "shapefiles" ]; then
-            git rm -r --cached shapefiles/* || true
-          fi
-          
-      - name: Trigger Airflow DAG
-        working-directory: ${{ github.sha }}
+      - name: Trigger DAG
         run: |
           docker exec airflow airflow dags trigger test_dag
-          
+
       - name: Show IP address
         run: |
           ifconfig en0
           
-      - name: Commit Changes
-        working-directory: ${{ github.sha }}
+      - name: Wait for DAG Completion
         run: |
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
+          # Wait for DAG to complete
+          sleep 5
+          
+      - name: Commit and Push Changes
+        run: |
           if [ -d "shapefiles" ]; then
-            git add -A shapefiles
-            git diff --cached --quiet || git commit -m "Updated with new files"
-            git push
+            git add shapefiles/
+            git status
+            if ! git diff --cached --quiet; then
+              git commit -m "Update shapefiles from Airflow DAG run"
+              git push
+            fi
           fi
           
-      - name: Clean up stopped containers
-        working-directory: ${{ github.sha }}
+      - name: Cleanup
+        if: always()  # Run this step even if previous steps fail
         run: |
-          docker ps -q | xargs -r docker stop
-          docker ps -aq | xargs -r docker rm
-          docker container prune -f
-          
-      - name: Shut Down
-        working-directory: ${{ github.sha }}
-        run: |
-          docker-compose down
-
-      - name: Cleanup workspace
-        if: always()
-        run: |
-          chmod -R 777 ${{ github.sha }} || true
-          rm -rf ${{ github.sha }} || true
+          docker compose down --remove-orphans
+          docker system prune -f
