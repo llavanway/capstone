@@ -1,6 +1,12 @@
-version: '3.8'
+# version: '3.8'
 
 services:
+  postgres:
+    image: postgres:13
+    environment:
+      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      POSTGRES_DB: ${{ secrets.POSTGRES_DB_AIRFLOW }}
   airflow:
     image: apache/airflow:latest
     container_name: airflow
@@ -8,7 +14,7 @@ services:
     ports:
       - "8080:8080"  # Map container's port 8080 to host's port 8080
     environment:
-      - AIRFLOW__CORE__EXECUTOR=LocalExecutor
+      - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
       - AIRFLOW__WEBSERVER__RBAC=True
       - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
