@@ -1,27 +1,24 @@
-# version: '3.8'
-
+# version: '3'
 services:
-  # postgres:
-  #   image: postgres:13
-  #   environment:
-  #     POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-  #     POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      # POSTGRES_DB: ${{ secrets.POSTGRES_DB_AIRFLOW }}
   airflow:
     image: apache/airflow:latest
     container_name: airflow
     restart: always
     ports:
-      - "8080:8080"  # Map container's port 8080 to host's port 8080
+      - "8080:8080"
     environment:
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
       - AIRFLOW__WEBSERVER__RBAC=True
       - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
-      - _AIRFLOW_WWW_USER_USERNAME=admin  # Default admin user
-      - _AIRFLOW_WWW_USER_PASSWORD=admin  # Default password
+      - AIRFLOW__WWW__USER_USERNAME=admin
+      - AIRFLOW__WWW__USER_PASSWORD=admin
     volumes:
-      - ./airflow_home:/opt/airflow  # Persist Airflow data
+      - ./airflow_home
+      - ./airflow_home:/opt/airflow
+      - ./dags
+    networks:
+      - airflow-network
     command: >
       bash -c "airflow db init &&
                airflow users create --username admin --password admin --firstname Air --lastname Flow --role Admin --email admin@example.com &&
@@ -37,23 +34,13 @@ services:
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
     volumes:
+      - ./airflow_home
       - ./airflow_home:/opt/airflow
+      - ./dags
+    networks:
+      - airflow-network
     command: airflow scheduler
 
-
-# version: '3'
-# services:
-#   postgres:
-#     image: postgres:13
-#     environment:
-#       POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-#       POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-#       POSTGRES_DB: ${{ secrets.POSTGRES_DB_AIRFLOW }}
-#   webserver:
-#     image: apache/airflow:2.5.1
-#     environment:
-#       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:airflow@postgres/airflow
-#     ports:
-#       - "8080:8080"
-#     depends_on:
-#       - postgres
+networks:
+  airflow-network:
+    driver: bridge
