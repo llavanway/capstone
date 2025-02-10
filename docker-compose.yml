@@ -1,12 +1,12 @@
 # version: '3.8'
 
 services:
-  postgres:
-    image: postgres:13
-    environment:
-      POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
-      POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
-      POSTGRES_DB: ${{ secrets.POSTGRES_DB_AIRFLOW }}
+  # postgres:
+  #   image: postgres:13
+  #   environment:
+  #     POSTGRES_USER: ${{ secrets.POSTGRES_USER }}
+  #     POSTGRES_PASSWORD: ${{ secrets.POSTGRES_PASSWORD }}
+      # POSTGRES_DB: ${{ secrets.POSTGRES_DB_AIRFLOW }}
   airflow:
     image: apache/airflow:latest
     container_name: airflow
