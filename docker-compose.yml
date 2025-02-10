@@ -15,7 +15,6 @@ services:
       - AIRFLOW__WWW__USER_PASSWORD=admin
     volumes:
       - ./airflow_home
-      - ./airflow_home:/opt/airflow
       - ./dags
     networks:
       - airflow-network
@@ -35,7 +34,6 @@ services:
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
     volumes:
       - ./airflow_home
-      - ./airflow_home:/opt/airflow
       - ./dags
     networks:
       - airflow-network
