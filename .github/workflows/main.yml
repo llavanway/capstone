@@ -18,6 +18,9 @@ jobs:
         run: |
           docker-compose up -d  # See docker-compose.yml file
 
+      - name: Wait for Docker Container to Start
+        run: sleep 60
+
       - name: Remove Old Files
         run: |
           git rm -r --cached shapefiles/*
