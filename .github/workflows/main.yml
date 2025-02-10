@@ -24,7 +24,7 @@ jobs:
 
       - name: Trigger Airflow DAG
         run: |
-          docker exec -ti <airflow-webserver-container> airflow dags trigger example_dag
+          docker exec -ti <airflow-webserver-container> airflow dags trigger test_dag
 
       - name: Commit Changes
         run: |
