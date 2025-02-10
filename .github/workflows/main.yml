@@ -35,6 +35,10 @@ jobs:
           git diff --cached --quiet || git commit -m "Updated with new files"
           git push
 
+      # manually prune containers
+      - name: Clean up stopped containers
+        run: docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker container prune -f 
+
       - name: Shut Down
         run: |
           docker-compose down  # Stop and remove Airflow containers
