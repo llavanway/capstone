@@ -25,6 +25,10 @@ jobs:
         run: |
           git rm -r --cached shapefiles/*
 
+      - name: Wait for Airflow Startup
+        run: |
+          sleep 20
+
       - name: Trigger Airflow DAG
         run: |
           docker exec airflow airflow dags trigger test_dag
