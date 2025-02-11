@@ -40,7 +40,7 @@ jobs:
           git push
 
       - name: Clean up Docker containers
-        if: always
+        if: always()
         run: |
           docker-compose down --volumes --remove-orphans
           docker system prune -f
