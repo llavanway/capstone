@@ -39,13 +39,19 @@ jobs:
           git diff --cached --quiet || git commit -m "Updated with new files"
           git push
 
-      # manually prune containers
-      - name: Clean up stopped containers
-        run: docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker container prune -f 
-
-      - name: Shut Down
+      - name: Clean up Docker containers
+        if: always
         run: |
-          docker-compose down  # Stop and remove Airflow containers
+          docker-compose down --volumes --remove-orphans
+          docker system prune -f
+
+      # manually prune containers
+      # - name: Clean up stopped containers
+      #   run: docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker container prune -f 
+
+      # - name: Shut Down
+      #   run: |
+      #     docker-compose down  # Stop and remove Airflow containers
 
       # - name: Set up Python
       #   uses: actions/setup-python@v5
