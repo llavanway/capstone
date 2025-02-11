@@ -1,57 +1,86 @@
-name: Run Airflow Pipeline
+name: Run Capstone Pipeline
+
 on:
-  workflow_dispatch:
+  workflow_dispatch:  # Manual trigger
 
 jobs:
   run-airflow-pipeline:
     runs-on: self-hosted
-    permissions:
-      contents: write  # Needed for pushing changes
-    
+
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
-        
-      - name: Configure Git
-        run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-      
+
       - name: Set Up Docker
         uses: docker/setup-buildx-action@v2
-        
-      - name: Start Airflow
+
+      - name: Start Airflow with Docker
         run: |
-          docker compose up -d
-          # Wait for Airflow webserver to be ready
-          sleep 5
-          
-      - name: Trigger DAG
+          docker-compose up -d  # See docker-compose.yml file
+
+      # - name: Wait for Docker Container to Start
+      #   run: sleep 10
+
+      - name: Remove Old Files
+        run: |
+          git rm -r --cached shapefiles/*
+
+      - name: Trigger Airflow DAG
         run: |
           docker exec airflow airflow dags trigger test_dag
 
       - name: Show IP address
         run: |
           ifconfig en0
-          
-      - name: Wait for DAG Completion
+
+      - name: Commit Changes
         run: |
-          # Wait for DAG to complete
-          sleep 5
-          
-      - name: Commit and Push Changes
+          git add -A shapefiles  # Adds new files, modified files, and tracks deletions
+          git diff --cached --quiet || git commit -m "Updated with new files"
+          git push
+
+      # manually prune containers
+      - name: Clean up stopped containers
+        run: docker stop $(docker ps -a -q) && docker rm $(docker ps -a -q) && docker container prune -f 
+
+      - name: Shut Down
         run: |
-          if [ -d "shapefiles" ]; then
-            git add shapefiles/
-            git status
-            if ! git diff --cached --quiet; then
-              git commit -m "Update shapefiles from Airflow DAG run"
-              git push
-            fi
-          fi
-          
-      - name: Cleanup
-        if: always()  # Run this step even if previous steps fail
-        run: |
-          docker compose down --remove-orphans
-          docker system prune -f
+          docker-compose down  # Stop and remove Airflow containers
+
+      # - name: Set up Python
+      #   uses: actions/setup-python@v5
+      #   with:
+      #     python-version: '3.9'
+
+      # - name: Install Dependencies
+      #   run: |
+      #     python -m pip install --upgrade pip
+      #     pip install apache-airflow apache-airflow-providers-http
+      #     pip install requests numpy==1.23.5 pandas==1.5.3 scipy==1.13.1 geopandas==1.0.1
+
+      # - name: Copy DAG scripts to Airflow Server
+      #   run: |
+      #     scp -o StrictHostKeyChecking=no dags/my_dag.py user@your-airflow-server:/home/user/airflow/dags/
+
+      # - name: Start Airflow Services
+      #   run: |
+      #     airflow db init
+      #     airflow users create --username admin --password admin --firstname First --lastname Last --role Admin --email admin@example.com
+      #     airflow webserver -D
+      #     airflow scheduler -D
+
+      # - name: Wait for Airflow Webserver to Start
+      #   run: sleep 30
+
+      # - name: Trigger Airflow DAG
+      #   run: |
+      #     curl -X POST "http://localhost:8080/api/v1/dags/my_dag_id/dagRuns" \
+      #     -H "Content-Type: application/json" \
+      #     --user admin:admin \
+      #     -d '{"conf": {}}'
+
+      # - name: Check DAG Status
+      #   run: |
+      #     sleep 30  # Allow DAG execution time
+      #     curl -X GET "http://localhost:8080/api/v1/dags/my_dag_id/dagRuns" \
+      #     --user admin:admin
