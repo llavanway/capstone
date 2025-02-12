@@ -1,0 +1,38 @@
+name: Stop Airflow
+
+on:
+  workflow_dispatch:  # Manual trigger
+
+jobs:
+  cleanup:
+    runs-on: self-hosted
+    
+    steps:
+      - name: List running containers
+        run: |
+          echo "Currently running containers:"
+          docker ps
+      
+      - name: Find and stop containers from target workflow
+        run: |
+          # Get containers created by the target workflow
+          CONTAINERS=$(docker ps --filter "label=github.workflow=Start Airflow" -q)
+          
+          if [ -n "$CONTAINERS" ]; then
+            echo "Found containers to clean up: $CONTAINERS"
+            
+            # Stop containers
+            echo "Stopping containers..."
+            docker stop $CONTAINERS
+            
+            # Remove containers
+            echo "Removing containers..."
+            docker rm $CONTAINERS
+          else
+            echo "No containers found from the target workflow"
+          fi
+      
+      - name: Verify cleanup
+        run: |
+          echo "Remaining containers:"
+          docker ps
