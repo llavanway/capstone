@@ -1,4 +1,4 @@
-name: Run Capstone Pipeline
+name: Start Airflow
 
 permissions:
   contents: write
@@ -19,38 +19,46 @@ jobs:
 
       - name: Start Airflow with Docker
         run: |
+          export GITHUB_WORKFLOW="${{ github.workflow }}"
+          export GITHUB_RUN_ID="${{ github.run_id }}"
           docker-compose up -d  # See docker-compose.yml file
-
-      # - name: Wait for Docker Container to Start
-      #   run: sleep 10
-
-      - name: Remove Old Files
-        run: |
-          git rm -r --cached shapefiles/*
 
       - name: Wait for Airflow Startup
         run: |
-          sleep 20
-
-      - name: Trigger Airflow DAG
-        run: |
-          docker exec airflow airflow dags trigger test_dag
+          sleep 10
 
       - name: Show IP address
         run: |
           ifconfig en0
 
-      - name: Commit Changes
+      - name: Stand By with Airflow Server Running
         run: |
-          git add -A shapefiles  # Adds new files, modified files, and tracks deletions
-          git diff --cached --quiet || git commit -m "Updated with new files"
-          git push
+          sleep 2700  # 45 minutes
 
       - name: Clean up Docker containers
         if: always()
         run: |
           docker-compose down --volumes --remove-orphans
           docker system prune -f
+
+      # - name: Trigger Airflow DAG
+      #   run: |
+      #     docker exec airflow airflow dags trigger test_dag
+
+      # - name: Wait for Docker Container to Start
+      #   run: sleep 10
+
+      # - name: Remove Old Files
+      #   run: |
+      #     git rm -r --cached shapefiles/*
+      
+      # - name: Commit Changes
+      #   run: |
+      #     git add -A shapefiles  # Adds new files, modified files, and tracks deletions
+      #     git diff --cached --quiet || git commit -m "Updated with new files"
+      #     git push
+
+
 
       # manually prune containers
       # - name: Clean up stopped containers
