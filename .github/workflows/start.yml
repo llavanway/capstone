@@ -1,4 +1,4 @@
-name: Start Airflow
+name: Run Airflow
 
 permissions:
   contents: write
