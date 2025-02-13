@@ -22,30 +22,31 @@ default_args = {
 }
 
 def example_print(print_text):
-  print(print_text)
+    print(print_text)
 
-def get_shapefile(url,bucket_name,blob_name):
+def get_shapefile(url, bucket_name, blob_name):
     # Initialize GCS client  
-      creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-      if not creds_json:
+    creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+    if not creds_json:
         raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not found")
+    
     # Parse the JSON string into a dictionary
     creds_dict = json.loads(creds_json)
+    
     # Create credentials object from the dictionary
     credentials = service_account.Credentials.from_service_account_info(creds_dict)
-
-  storage_client = storage.Client(credentials=credentials)
-  bucket = storage_client.bucket(bucket_name)
-  blob = bucket.blob(blob_name)
-
-  # Download and extract
-  with ZipFile(BytesIO(requests.get(url).content)) as zip_file:
-    for file in zip_file.namelist():
-          filename = os.path.basename(file)
-          if filename and not file.endswith('/'):  # Skip directories
-              # Extract file directly to extract_dir
-              with zip_file.open(file) as f:
-                blob.upload_from_file(f)
+    storage_client = storage.Client(credentials=credentials)
+    bucket = storage_client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    
+    # Download and extract
+    with ZipFile(BytesIO(requests.get(url).content)) as zip_file:
+        for file in zip_file.namelist():
+            filename = os.path.basename(file)
+            if filename and not file.endswith('/'):  # Skip directories
+                # Extract file directly to extract_dir
+                with zip_file.open(file) as f:
+                    blob.upload_from_file(f)
 
 with DAG(
     'main_dag',
@@ -56,29 +57,30 @@ with DAG(
     catchup=False,
     tags=['prod']
 ) as dag:
-
     # Example startup task
     example_startup = PythonOperator(
-      task_id='start_up',
-      python_callable=example_print,
-      op_kwargs={'print_text': 'Starting up...'}
+        task_id='start_up',
+        python_callable=example_print,
+        op_kwargs={'print_text': 'Starting up...'}
     )
-
+    
     # Get shapefiles 
     get_shapefile_census = PythonOperator(
         task_id='get_shapefile_census',
         python_callable=get_shapefile,
-        op_kwargs={'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycb2020_24d.zip',
-                  'bucket_name':'plavan1-capstone',
-                  'blob_name':'raw_shapefiles/census_blocks'}
+        op_kwargs={
+            'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycb2020_24d.zip',
+            'bucket_name': 'plavan1-capstone',
+            'blob_name': 'raw_shapefiles/census_blocks'
+        }
     )
-
-   # Example shutdown task
+    
+    # Example shutdown task
     example_shutdown = PythonOperator(
-      task_id='shut_down',
-      python_callable=example_print,
-      op_kwargs={'print_text': 'Shutting down...'}
+        task_id='shut_down',
+        python_callable=example_print,
+        op_kwargs={'print_text': 'Shutting down...'}
     )
-
+    
     # Define task dependencies
     example_startup >> get_shapefile_census >> example_shutdown
