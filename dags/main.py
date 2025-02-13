@@ -56,23 +56,23 @@ with DAG(
     example_startup = PythonOperator(
       task_id='start_up',
       python_callable=example_print,
-      print_text='Starting up...'
+      op_kwargs={'print_text': 'Starting up...'}
     )
 
     # Get shapefiles 
     get_shapefile_census = PythonOperator(
         task_id='get_shapefile_census',
         python_callable=get_shapefile,
-        url='https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycb2020_24d.zip',
-      bucket_name='plavan1-capstone',
-      blob_name='raw_shapefiles/census_blocks'
+        op_kwargs={'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycb2020_24d.zip',
+                  'bucket_name':'',
+                  'blob_name':'raw_shapefiles/census_blocks'}
     )
 
    # Example shutdown task
     example_shutdown = PythonOperator(
       task_id='shut_down',
       python_callable=example_print,
-      print_text='Shutting down...'
+      op_kwargs={'print_text': 'Starting up...'}
     )
 
     # Define task dependencies
