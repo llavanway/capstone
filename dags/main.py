@@ -117,4 +117,4 @@ with DAG(
     )
     
     # Define task dependencies
-    example_startup >> get_shapefile_census >> example_shutdown
+    example_startup >> [get_shapefile_census,get_shapefile_ceommunity_district,get_shapefile_council_district,get_shapefile_school_district] >> example_shutdown
