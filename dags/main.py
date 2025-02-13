@@ -152,7 +152,7 @@ with DAG(
     )
     
     # Create shapefile processing task group
-    shapefile_tasks = create_shapefile_tasks(dag, 'plavan1-capstone')
+    file_tasks = create_shapefile_tasks(dag, 'plavan1-capstone')
     
     # End task
     end_task = PythonOperator(
@@ -161,4 +161,4 @@ with DAG(
     )
     
     # Define task dependencies
-    start_task >> shapefile_tasks >> end_task
+    start_task >> file_tasks >> end_task
