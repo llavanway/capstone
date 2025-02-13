@@ -16,6 +16,7 @@ services:
       - AIRFLOW__WEBSERVER__ENABLE_PROXY_FIX=True
       - AIRFLOW__WWW__USER_USERNAME=admin
       - AIRFLOW__WWW__USER_PASSWORD=admin
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
     volumes:
       - ./airflow_home:/opt/airflow
       - ./dags:/opt/airflow/dags
@@ -38,6 +39,7 @@ services:
     environment:
       - AIRFLOW__CORE__EXECUTOR=SequentialExecutor
       - AIRFLOW__CORE__SQL_ALCHEMY_CONN=sqlite:////opt/airflow/airflow.db
+      - GOOGLE_APPLICATION_CREDENTIALS=${GOOGLE_APPLICATION_CREDENTIALS}
     volumes:
       - ./airflow_home:/opt/airflow
       - ./dags:/opt/airflow/dags
