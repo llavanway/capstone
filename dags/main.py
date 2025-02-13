@@ -79,6 +79,36 @@ with DAG(
         }
     )
     
+    get_shapefile_ceommunity_district = PythonOperator(
+        task_id='get_shapefile_community_district',
+        python_callable=get_shapefile,
+        op_kwargs={
+            'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycd_24d.zip',
+            'bucket_name': 'plavan1-capstone',
+            'blob_name': 'raw_shapefiles/community_districts'
+        }
+    )
+
+    get_shapefile_council_district = PythonOperator(
+        task_id='get_shapefile_council_district',
+        python_callable=get_shapefile,
+        op_kwargs={
+            'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycc_24d.zip',
+            'bucket_name': 'plavan1-capstone',
+            'blob_name': 'raw_shapefiles/council_districts'
+        }
+    )
+
+    get_shapefile_school_district = PythonOperator(
+        task_id='get_shapefile_school_district',
+        python_callable=get_shapefile,
+        op_kwargs={
+            'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nysd_24d.zip',
+            'bucket_name': 'plavan1-capstone',
+            'blob_name': 'raw_shapefiles/school_districts'
+        }
+    )
+    
     # Example shutdown task
     example_shutdown = PythonOperator(
         task_id='shut_down',
