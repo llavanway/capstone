@@ -41,7 +41,7 @@ FILE_CONFIG = {
         'blob_path': 'raw_metrics/nyc_housing_units'
     },
     'school_capacity': {
-        'url':'https://data.cityofnewyork.us/api/views/gkd7-3vk7/rows.csv?query=SELECT%0A%20%20%60geo_dist%60%2C%0A%20%20sum(%60bldg_enroll%60)%20AS%20%60sum_bldg_enroll%60%2C%0A%20%20sum(%60target_bldg_cap%60)%20AS%20%60sum_target_bldg_cap%60%0AGROUP%20BY%20%60geo_dist%60&fourfour=gkd7-3vk7&read_from_nbe=true&version=2.1&cacheBust=1704903561&date=20250213&accessType=DOWNLOAD'
+        'url':'https://data.cityofnewyork.us/api/views/gkd7-3vk7/rows.csv?query=SELECT%0A%20%20%60geo_dist%60%2C%0A%20%20sum(%60bldg_enroll%60)%20AS%20%60sum_bldg_enroll%60%2C%0A%20%20sum(%60target_bldg_cap%60)%20AS%20%60sum_target_bldg_cap%60%0AGROUP%20BY%20%60geo_dist%60&fourfour=gkd7-3vk7&read_from_nbe=true&version=2.1&cacheBust=1704903561&date=20250213&accessType=DOWNLOAD',
         # 'url': '''https://data.cityofnewyork.us/api/views/gkd7-3vk7/rows.csv?query=SELECT%0A%20%20%60\
         # geo_dist%60%2C%0A%20%20sum(%60bldg_enroll%60)%20AS%20%60sum_bldg_enroll%60%2C%0A%20%20sum(%60t\
         # arget_bldg_cap%60)%20AS%20%60sum_target_bldg_cap%60%0AGROUP%20BY%20%60geo_dist%60&fourfour=gkd7\
