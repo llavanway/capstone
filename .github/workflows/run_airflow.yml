@@ -22,10 +22,12 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_STORAGE }}
 
       - name: Start Airflow with Docker
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GOOGLE_CLOUD_STORAGE }}
         run: |
           export GITHUB_WORKFLOW="${{ github.workflow }}"
           export GITHUB_RUN_ID="${{ github.run_id }}"
-          docker-compose up -d  # See docker-compose.yml file
+          docker-compose --env-file <(echo "GOOGLE_APPLICATION_CREDENTIALS=$GOOGLE_APPLICATION_CREDENTIALS") up -d  # See docker-compose.yml file
 
       - name: Wait for Airflow Startup
         run: |
