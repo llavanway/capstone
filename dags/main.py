@@ -26,9 +26,9 @@ def example_print(print_text):
 
 def get_shapefile(url, bucket_name, blob_name):
     # Initialize GCS client  
-    creds_json = os.getenv('GOOGLE_CLOUD_STORAGE')
+    creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
     if not creds_json:
-        raise ValueError("GOOGLE_CLOUD_STORAGE environment variable not found")
+        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not found")
     
     # Parse the JSON string into a dictionary
     creds_dict = json.loads(creds_json)
