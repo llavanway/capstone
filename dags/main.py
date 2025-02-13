@@ -55,7 +55,7 @@ with DAG(
     # Example startup task
     example_startup = PythonOperator(
       task_id='start_up',
-      python_callable=example_startup,
+      python_callable=example_print,
       print_text='Starting up...'
     )
 
@@ -69,9 +69,9 @@ with DAG(
     )
 
    # Example shutdown task
-    example_startup = PythonOperator(
+    example_shutdown = PythonOperator(
       task_id='shut_down',
-      python_callable=example_startup,
+      python_callable=example_print,
       print_text='Shutting down...'
     )
 
