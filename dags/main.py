@@ -85,7 +85,7 @@ with DAG(
         op_kwargs={
             'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycd_24d.zip',
             'bucket_name': 'plavan1-capstone',
-            'blob_name': 'raw_shapefiles/community_districts'
+            'blob_name': 'raw_shapefiles/nyc_community_districts'
         }
     )
 
@@ -95,7 +95,7 @@ with DAG(
         op_kwargs={
             'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycc_24d.zip',
             'bucket_name': 'plavan1-capstone',
-            'blob_name': 'raw_shapefiles/council_districts'
+            'blob_name': 'raw_shapefiles/nyc_council_districts'
         }
     )
 
@@ -105,7 +105,7 @@ with DAG(
         op_kwargs={
             'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nysd_24d.zip',
             'bucket_name': 'plavan1-capstone',
-            'blob_name': 'raw_shapefiles/school_districts'
+            'blob_name': 'raw_shapefiles/nyc_school_districts'
         }
     )
     
