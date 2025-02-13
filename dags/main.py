@@ -37,10 +37,6 @@ def get_shapefile(url,bucket_name,blob_name):
               # Extract file directly to extract_dir
               with zip_file.open(file) as f:
                 blob.upload_from_file(f)
-  
-  
-  
-  blob.upload_from_file(response.content)
 
 with DAG(
     'main_dag',
@@ -76,4 +72,4 @@ with DAG(
     )
 
     # Define task dependencies
-    example_startup >> get_shapefile_census >> shut_down
+    example_startup >> get_shapefile_census >> example_shutdown
