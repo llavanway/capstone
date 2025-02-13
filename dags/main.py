@@ -44,9 +44,13 @@ def get_shapefile(url, bucket_name, blob_name):
         for file in zip_file.namelist():
             filename = os.path.basename(file)
             if filename and not file.endswith('/'):  # Skip directories
-                # Extract file directly to extract_dir
+                # Create a new blob for each file
+                blob = bucket.blob(f"{blob_name}/{filename}")
+                
+                # Extract and upload file
                 with zip_file.open(file) as f:
-                    blob.upload_from_file(f)
+                    content = f.read()  # Read the content first
+                    blob.upload_from_string(content)
 
 with DAG(
     'main_dag',
