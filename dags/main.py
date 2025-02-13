@@ -9,6 +9,8 @@ import requests
 from zipfile import ZipFile
 from io import BytesIO
 from google.cloud import storage
+from google.oauth2 import service_account
+import json
 
 default_args = {
     'owner': 'airflow',
@@ -23,9 +25,16 @@ def example_print(print_text):
   print(print_text)
 
 def get_shapefile(url,bucket_name,blob_name):
+    # Initialize GCS client  
+      creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
+      if not creds_json:
+        raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not found")
+    # Parse the JSON string into a dictionary
+    creds_dict = json.loads(creds_json)
+    # Create credentials object from the dictionary
+    credentials = service_account.Credentials.from_service_account_info(creds_dict)
 
-  # Initialize GCS client  
-  storage_client = storage.Client()
+  storage_client = storage.Client(credentials=credentials)
   bucket = storage_client.bucket(bucket_name)
   blob = bucket.blob(blob_name)
 
@@ -60,7 +69,7 @@ with DAG(
         task_id='get_shapefile_census',
         python_callable=get_shapefile,
         op_kwargs={'url': 'https://s-media.nyc.gov/agencies/dcp/assets/files/zip/data-tools/bytes/nycb2020_24d.zip',
-                  'bucket_name':'',
+                  'bucket_name':'plavan1-capstone',
                   'blob_name':'raw_shapefiles/census_blocks'}
     )
 
@@ -68,7 +77,7 @@ with DAG(
     example_shutdown = PythonOperator(
       task_id='shut_down',
       python_callable=example_print,
-      op_kwargs={'print_text': 'Starting up...'}
+      op_kwargs={'print_text': 'Shutting down...'}
     )
 
     # Define task dependencies
