@@ -198,4 +198,5 @@ with DAG(
     )
     
     # Define task dependencies
-    start_task >> file_tasks >> create_metrics >> end_task
+    # start_task >> file_tasks >> create_metrics >> end_task
+    start_task >> file_tasks >> end_task
