@@ -80,60 +80,60 @@ def create_metrics():
             return False
 
     def read_csv_from_drive(service, folder_name, file_name):
-    """
-    Read a CSV file from Google Drive into a pandas DataFrame by searching for 
-    the file name within the specified folder.
-    
-    Args:
-        service: Google Drive API service instance
-        folder_name: Name of the folder to search in
-        file_name: Name of the file to download
+        """
+        Read a CSV file from Google Drive into a pandas DataFrame by searching for 
+        the file name within the specified folder.
         
-    Returns:
-        pandas DataFrame containing the CSV data
-    """
-    try:
-        # First, find the folder ID by name
-        folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
-        folder_results = service.files().list(q=folder_query, spaces='drive', fields='files(id)').execute()
-        folder_items = folder_results.get('files', [])
-        
-        if not folder_items:
-            raise FileNotFoundError(f"Folder '{folder_name}' not found")
+        Args:
+            service: Google Drive API service instance
+            folder_name: Name of the folder to search in
+            file_name: Name of the file to download
             
-        folder_id = folder_items[0]['id']
-        
-        # Then find the file within that folder
-        file_query = f"name='{file_name}' and '{folder_id}' in parents"
-        file_results = service.files().list(q=file_query, spaces='drive', fields='files(id, mimeType)').execute()
-        file_items = file_results.get('files', [])
-        
-        if not file_items:
-            raise FileNotFoundError(f"File '{file_name}' not found in folder '{folder_name}'")
+        Returns:
+            pandas DataFrame containing the CSV data
+        """
+        try:
+            # First, find the folder ID by name
+            folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
+            folder_results = service.files().list(q=folder_query, spaces='drive', fields='files(id)').execute()
+            folder_items = folder_results.get('files', [])
             
-        file_id = file_items[0]['id']
-        mime_type = file_items[0]['mimeType']
-        
-        # Handle different file types
-        if mime_type == 'application/vnd.google-apps.spreadsheet':
-            # For Google Sheets, use the export feature
-            request = service.files().export_media(fileId=file_id, mimeType='text/csv')
-        else:
-            # For regular CSV files, use get_media
-            request = service.files().get_media(fileId=file_id)
-        
-        fh = io.BytesIO()
-        downloader = MediaIoBaseDownload(fh, request)
-        done = False
-        while done is False:
-            status, done = downloader.next_chunk()
-        
-        fh.seek(0)
-        return pd.read_csv(fh)
-        
-    except Exception as e:
-        logger.error(f"Error reading CSV file '{file_name}' from folder '{folder_name}': {e}")
-        raise
+            if not folder_items:
+                raise FileNotFoundError(f"Folder '{folder_name}' not found")
+                
+            folder_id = folder_items[0]['id']
+            
+            # Then find the file within that folder
+            file_query = f"name='{file_name}' and '{folder_id}' in parents"
+            file_results = service.files().list(q=file_query, spaces='drive', fields='files(id, mimeType)').execute()
+            file_items = file_results.get('files', [])
+            
+            if not file_items:
+                raise FileNotFoundError(f"File '{file_name}' not found in folder '{folder_name}'")
+                
+            file_id = file_items[0]['id']
+            mime_type = file_items[0]['mimeType']
+            
+            # Handle different file types
+            if mime_type == 'application/vnd.google-apps.spreadsheet':
+                # For Google Sheets, use the export feature
+                request = service.files().export_media(fileId=file_id, mimeType='text/csv')
+            else:
+                # For regular CSV files, use get_media
+                request = service.files().get_media(fileId=file_id)
+            
+            fh = io.BytesIO()
+            downloader = MediaIoBaseDownload(fh, request)
+            done = False
+            while done is False:
+                status, done = downloader.next_chunk()
+            
+            fh.seek(0)
+            return pd.read_csv(fh)
+            
+        except Exception as e:
+            logger.error(f"Error reading CSV file '{file_name}' from folder '{folder_name}': {e}")
+            raise
 
     drive_service = get_drive_client()
     
