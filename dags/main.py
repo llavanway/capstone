@@ -10,6 +10,7 @@ from io import BytesIO
 import json
 import os
 import logging
+from create_metrics import create_metrics
 
 # Configure logging
 logger = logging.getLogger(__name__)
@@ -149,11 +150,16 @@ with DAG(
     # Start task
     start_task = PythonOperator(
         task_id='start_up',
-        python_callable=lambda: logger.info("Starting DAG execution")
+        python_callable=lambda: logger.info("Starting DAG execution...")
     )
     
     # Create shapefile processing task group
     file_tasks = create_shapefile_tasks(dag, 'plavan1-capstone')
+
+    create_metrics = PythonOperator(
+        task_id='create_metrics'
+        python_callable=create_metrics
+    )
     
     # End task
     end_task = PythonOperator(
@@ -162,4 +168,4 @@ with DAG(
     )
     
     # Define task dependencies
-    start_task >> file_tasks >> end_task
+    start_task >> file_tasks >> create_metrics >> end_task
