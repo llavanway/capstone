@@ -236,7 +236,7 @@ def create_metrics():
     final_geometry = final_districts[['geometry','BoroCD','SchoolDist','CounDist','GEOID','CensusTract']]
 
     # Convert GeoDataFrame to GeoJSON string
-    final_geometry = final_geometry.to_json(driver='GeoJSON')
+    final_geometry = final_geometry.to_json()
     
     # Create file-like object from GeoJSON string
     file_content = io.BytesIO(final_geometry.encode('utf-8'))
