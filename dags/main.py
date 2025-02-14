@@ -5,7 +5,7 @@ from airflow.utils.task_group import TaskGroup
 from google.cloud import storage
 from google.oauth2 import service_account
 import requests
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile
 from io import BytesIO
 import json
 import os
