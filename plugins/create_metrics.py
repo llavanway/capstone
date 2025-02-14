@@ -256,7 +256,7 @@ def create_metrics():
     )
     
     # Upload file
-    file = service.files().create(
+    file = drive_service.files().create(
         body=file_metadata,
         media_body=media,
         fields='id, webViewLink'
