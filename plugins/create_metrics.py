@@ -22,10 +22,10 @@ def create_metrics():
   gcp_bucket = 'plavan1-capstone'
   
   shapefile_blobs = {
-      'community_district': 'raw_shapefiles/nyc_community_districts/nycd.shp',
-      'council_district': 'raw_shapefiles/nyc_council_districts/nycc.shp',
-      'school_district': 'raw_shapefiles/nyc_school_districts/nysd.shp',
-      'census_block': 'raw_shapefiles/census_blocks/nycb.shp'
+      'community_district': 'raw_shapefiles/nyc_community_districts',
+      'council_district': 'raw_shapefiles/nyc_council_districts',
+      'school_district': 'raw_shapefiles/nyc_school_districts',
+      'census_block': 'raw_shapefiles/census_blocks'
   }
   
   metric_blobs = {
