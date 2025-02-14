@@ -70,6 +70,7 @@ credentials = service_account.Credentials.from_service_account_info(creds_dict)
 def download_and_extract(url: str, folder_id: str) -> None:
     """
     Download a zip file from URL and extract its contents.
+    First clears all existing files from the destination folder.
     
     Args:
         url: Source URL for the zip file
@@ -78,12 +79,33 @@ def download_and_extract(url: str, folder_id: str) -> None:
     logger.info(f"Starting download from {url}...")
     
     try:
+        # Initialize Google Drive service
+        drive_service = build('drive', 'v3', credentials=credentials)
+        
+        # Clear existing files from folder
+        logger.info("Clearing existing files from folder...")
+        try:
+            # List all files in the folder
+            results = drive_service.files().list(
+                q=f"'{folder_id}' in parents",
+                fields="files(id, name)"
+            ).execute()
+            files = results.get('files', [])
+            
+            # Delete each file
+            for file in files:
+                drive_service.files().delete(fileId=file['id']).execute()
+                logger.info(f"Deleted file: {file['name']}")
+            
+            logger.info(f"Cleared {len(files)} files from folder")
+            
+        except Exception as e:
+            logger.error(f"Error clearing folder: {str(e)}")
+            raise
+        
         # Download zip file
         response = requests.get(url)
         response.raise_for_status()
-        
-        # Initialize Google Drive service
-        drive_service = build('drive', 'v3', credentials=credentials)
         
         # Process zip file
         try:
