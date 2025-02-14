@@ -233,7 +233,7 @@ def create_metrics():
 
     # # separate geometry only to upload to Tableau
 
-    final_geometry = final_data[['geometry','BoroCD','SchoolDist','CounDist','GEOID','CensusTract']]
+    final_geometry = final_districts[['geometry','BoroCD','SchoolDist','CounDist','GEOID','CensusTract']]
 
     # Convert GeoDataFrame to GeoJSON string
     final_geometry = final_geometry.to_json(driver='GeoJSON')
