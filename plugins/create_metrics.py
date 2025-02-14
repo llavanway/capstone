@@ -28,7 +28,7 @@ def create_metrics():
       'community_district': 'raw_shapefiles/nyc_community_districts/nycd',
       'council_district': 'raw_shapefiles/nyc_council_districts/nycc',
       'school_district': 'raw_shapefiles/nyc_school_districts/nysd',
-      'census_block': 'raw_shapefiles/census_blocks/nycb'
+      'census_block': 'raw_shapefiles/census_blocks/nycb2020'
   }
   
   metric_blobs = {
