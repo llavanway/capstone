@@ -6,6 +6,9 @@ import io
 from pathlib import Path
 import pandas as pd
 import geopandas as gpd
+import logging
+
+logger = logging.getLogger(__name__)
 
 def create_metrics():
   
@@ -22,10 +25,10 @@ def create_metrics():
   gcp_bucket = 'plavan1-capstone'
   
   shapefile_blobs = {
-      'community_district': 'raw_shapefiles/nyc_community_districts/nycd.shp',
-      'council_district': 'raw_shapefiles/nyc_council_districts/nycc.shp',
-      'school_district': 'raw_shapefiles/nyc_school_districts/nysd.shp',
-      'census_block': 'raw_shapefiles/census_blocks/nycb.shp'
+      'community_district': 'raw_shapefiles/nyc_community_districts/nycd',
+      'council_district': 'raw_shapefiles/nyc_council_districts/nycc',
+      'school_district': 'raw_shapefiles/nyc_school_districts/nysd',
+      'census_block': 'raw_shapefiles/census_blocks/nycb'
   }
   
   metric_blobs = {
@@ -44,11 +47,11 @@ def create_metrics():
   d = {}
   
   for key in shapefile_blobs:
-    # Download all shapefile components (.shp, .shx, .dbf, .prj)
+    # Download all shapefile components (.shp, .shx, .dbf, .prj, .xml)
     base_path = shapefile_blobs[key]
     local_files = []
     
-    for ext in ['.shp', '.shx', '.dbf', '.prj']:
+    for ext in ['.shp', '.shx', '.dbf', '.prj','.xml']:
         blob = bucket.blob(f"{base_path}{ext}")
         local_path = f"{temp_dir}/{key}{ext}"
         
@@ -71,6 +74,9 @@ def create_metrics():
             os.remove(file)
         except OSError:
             pass
+
+  # Check shapefile downloads
+  logger.info(list(d.keys()))
   
   school_districts = d['school_district']
   council_districts = d['council_district']
