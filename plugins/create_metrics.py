@@ -80,15 +80,33 @@ def create_metrics():
             return False
 
     def read_csv_from_drive(service, file_id):
-        """Read a CSV file directly from Google Drive into a pandas DataFrame."""
-        request = service.files().get_media(fileId=file_id)
+    """
+    Read a CSV file from Google Drive into a pandas DataFrame.
+    Handles both regular CSV files and Google Sheets.
+    """
+    try:
+        # First, get the file metadata to check its mimeType
+        file_metadata = service.files().get(fileId=file_id, fields='mimeType').execute()
+        mime_type = file_metadata.get('mimeType', '')
+
+        if mime_type == 'application/vnd.google-apps.spreadsheet':
+            # For Google Sheets, use the export feature
+            request = service.files().export_media(fileId=file_id, mimeType='text/csv')
+        else:
+            # For regular CSV files, use get_media
+            request = service.files().get_media(fileId=file_id)
+
         fh = io.BytesIO()
         downloader = MediaIoBaseDownload(fh, request)
         done = False
         while done is False:
             status, done = downloader.next_chunk()
+        
         fh.seek(0)
         return pd.read_csv(fh)
+    except Exception as e:
+        logger.error(f"Error reading CSV file {file_id}: {e}")
+        raise
 
     drive_service = get_drive_client()
     
