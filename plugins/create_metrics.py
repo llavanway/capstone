@@ -39,7 +39,7 @@ def create_metrics():
   for key in shapefile_blobs:
     storage_client = get_gcs_client()
     bucket = storage_client.bucket(gcp_bucket)
-    blob = bucket.blob(shapefile_blobs[key)
+    blob = bucket.blob(shapefile_blobs[key])
     with blob.open('r) as f:
                    d[key] = gpd.read_file(f)
   
