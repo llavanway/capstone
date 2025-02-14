@@ -122,12 +122,12 @@ def download_and_extract_to_gcs(url: str, bucket_name: str, blob_path: str) -> N
         logger.error(f"Error processing files: {str(e)}")
         raise
 
-def create_shapefile_tasks(dag, bucket_name):
-    """Create tasks for downloading and processing shapefiles."""
-    with TaskGroup(group_id="shapefile_processing") as shapefile_group:
+def create_file_tasks(dag, bucket_name):
+    """Create tasks for downloading and processing files."""
+    with TaskGroup(group_id="file_processing") as file_group:
         for name, config in FILE_CONFIG.items():
             PythonOperator(
-                task_id=f"get_shapefile_{name}",
+                task_id=f"get_file_{name}",
                 python_callable=download_and_extract_to_gcs,
                 op_kwargs={
                     'url': config['url'],
@@ -137,7 +137,7 @@ def create_shapefile_tasks(dag, bucket_name):
                 dag=dag
             )
         
-        return shapefile_group
+        return file_group
 
 with DAG(
     'main_dag',
@@ -156,7 +156,7 @@ with DAG(
     )
     
     # Create shapefile processing task group
-    file_tasks = create_shapefile_tasks(dag, 'plavan1-capstone')
+    file_tasks = create_file_tasks(dag, 'plavan1-capstone')
 
     create_metrics = PythonOperator(
         task_id='create_metrics',
