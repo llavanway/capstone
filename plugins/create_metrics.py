@@ -191,6 +191,7 @@ def create_metrics():
   final_data.loc[(final_data['SchoolEnrollmentStatus'] == 'Under enrolled') & (final_data['JobAccessRating'].isin(['Medium','High','Very High'])), 'HousingReadyDistrict2'] = 'Yes'
   
   # Store final metrics
+  final_data = final_data.to_csv(index=False)
   bucket = get_gcs_client().bucket(gcp_bucket)
   blob = bucket.blob('final_metrics')
   blob.upload_from_string(final_data) 
