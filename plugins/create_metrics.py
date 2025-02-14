@@ -193,5 +193,5 @@ def create_metrics():
   # Store final metrics
   final_data = final_data.to_csv(index=False)
   bucket = get_gcs_client().bucket(gcp_bucket)
-  blob = bucket.blob('final_metrics')
+  blob = bucket.blob('final_metrics/final_metrics.csv')
   blob.upload_from_string(final_data) 
