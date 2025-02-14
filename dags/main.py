@@ -11,8 +11,8 @@ import json
 import os
 import sys
 import logging
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from helpers.create_metrics import create_metrics
+# sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from airflow.plugins.helpers.create_metrics import create_metrics
 
 # Configure logging
 logger = logging.getLogger(__name__)
