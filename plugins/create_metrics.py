@@ -38,6 +38,29 @@ def create_metrics():
         credentials = service_account.Credentials.from_service_account_info(creds_dict)
         return build('drive', 'v3', credentials=credentials)
 
+    def clear_folder(service, folder_id):
+        """Delete all files in the specified folder."""
+        try:
+            # List all files in the folder
+            results = service.files().list(
+                q=f"'{folder_id}' in parents",
+                fields="files(id, name)"
+            ).execute()
+            files = results.get('files', [])
+            
+            # Delete each file
+            for file in files:
+                try:
+                    service.files().delete(fileId=file['id']).execute()
+                    logger.info(f"Deleted file: {file['name']}")
+                except Exception as e:
+                    logger.error(f"Error deleting file {file['name']}: {e}")
+            
+            return True
+        except Exception as e:
+            logger.error(f"Error clearing folder {folder_id}: {e}")
+            return False
+
     def download_file(service, file_id, output_path):
         """Download a file from Google Drive."""
         try:
@@ -202,6 +225,11 @@ def create_metrics():
     final_data.loc[(final_data['SchoolEnrollmentStatus'] == 'Under enrolled') & 
                    (final_data['JobAccessRating'].isin(['Medium','High','Very High'])), 'HousingReadyDistrict2'] = 'Yes'
     
+    # Clear the final metrics folder before uploading
+    if not clear_folder(drive_service, final_metrics_folder_id):
+        logger.error("Failed to clear final metrics folder")
+        return
+    
     # Convert to CSV and upload to Drive
     csv_buffer = io.StringIO()
     final_data.to_csv(csv_buffer, index=False)
@@ -216,7 +244,7 @@ def create_metrics():
     # Create the file in the final_metrics folder
     file_metadata = {
         'name': 'final_metrics.csv',
-        'parents': [final_metrics_folder_id]  # Replace with actual folder ID
+        'parents': [final_metrics_folder_id]
     }
     
     drive_service.files().create(
