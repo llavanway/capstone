@@ -76,6 +76,7 @@ def create_metrics():
             pass
 
   # Check shapefile downloads
+  logger.info('Shapefile dict keys:')
   logger.info(list(d.keys()))
   
   school_districts = d['school_district']
