@@ -79,34 +79,61 @@ def create_metrics():
             logger.error(f"Error downloading file {file_id}: {e}")
             return False
 
-    def read_csv_from_drive(service, file_id):
-        """
-        Read a CSV file from Google Drive into a pandas DataFrame.
-        Handles both regular CSV files and Google Sheets.
-        """
-        try:
-            # First, get the file metadata to check its mimeType
-            file_metadata = service.files().get(fileId=file_id, fields='mimeType').execute()
-            mime_type = file_metadata.get('mimeType', '')
+    def read_csv_from_drive(service, folder_name, file_name):
+    """
+    Read a CSV file from Google Drive into a pandas DataFrame by searching for 
+    the file name within the specified folder.
     
-            if mime_type == 'application/vnd.google-apps.spreadsheet':
-                # For Google Sheets, use the export feature
-                request = service.files().export_media(fileId=file_id, mimeType='text/csv')
-            else:
-                # For regular CSV files, use get_media
-                request = service.files().get_media(fileId=file_id)
-    
-            fh = io.BytesIO()
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while done is False:
-                status, done = downloader.next_chunk()
+    Args:
+        service: Google Drive API service instance
+        folder_name: Name of the folder to search in
+        file_name: Name of the file to download
+        
+    Returns:
+        pandas DataFrame containing the CSV data
+    """
+    try:
+        # First, find the folder ID by name
+        folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
+        folder_results = service.files().list(q=folder_query, spaces='drive', fields='files(id)').execute()
+        folder_items = folder_results.get('files', [])
+        
+        if not folder_items:
+            raise FileNotFoundError(f"Folder '{folder_name}' not found")
             
-            fh.seek(0)
-            return pd.read_csv(fh)
-        except Exception as e:
-            logger.error(f"Error reading CSV file {file_id}: {e}")
-            raise
+        folder_id = folder_items[0]['id']
+        
+        # Then find the file within that folder
+        file_query = f"name='{file_name}' and '{folder_id}' in parents"
+        file_results = service.files().list(q=file_query, spaces='drive', fields='files(id, mimeType)').execute()
+        file_items = file_results.get('files', [])
+        
+        if not file_items:
+            raise FileNotFoundError(f"File '{file_name}' not found in folder '{folder_name}'")
+            
+        file_id = file_items[0]['id']
+        mime_type = file_items[0]['mimeType']
+        
+        # Handle different file types
+        if mime_type == 'application/vnd.google-apps.spreadsheet':
+            # For Google Sheets, use the export feature
+            request = service.files().export_media(fileId=file_id, mimeType='text/csv')
+        else:
+            # For regular CSV files, use get_media
+            request = service.files().get_media(fileId=file_id)
+        
+        fh = io.BytesIO()
+        downloader = MediaIoBaseDownload(fh, request)
+        done = False
+        while done is False:
+            status, done = downloader.next_chunk()
+        
+        fh.seek(0)
+        return pd.read_csv(fh)
+        
+    except Exception as e:
+        logger.error(f"Error reading CSV file '{file_name}' from folder '{folder_name}': {e}")
+        raise
 
     drive_service = get_drive_client()
     
@@ -206,9 +233,9 @@ def create_metrics():
     final_data = final_districts.copy()
     
     # Download and read metric files
-    housing_df = read_csv_from_drive(drive_service, metric_folder_ids['housing_units'])
-    school_cap_df = read_csv_from_drive(drive_service, metric_folder_ids['school_capacity'])
-    transit_df = read_csv_from_drive(drive_service, metric_folder_ids['transit_access'])
+    housing_df = read_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
+    school_cap_df = read_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
+    transit_df = read_csv_from_drive(drive_service, metric_folder_ids['transit_access'],'New York_36_transit_census_tract_2022.csv')
     
     # Process metrics
     housing_df['units_15_24'] = housing_df[['comp2015', 'comp2016', 'comp2017','comp2018','comp2019',
