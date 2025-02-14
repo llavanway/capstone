@@ -39,10 +39,9 @@ def create_metrics():
   for key in shapefile_blobs:
     storage_client = get_gcs_client()
     bucket = storage_client.bucket(gcp_bucket)
-    blob_path = gcp_bucket+'/'+shapefile_blobs[key]
-    blob = bucket.blob(blob_path)
-    shp_file = list(Path(shapefile_dir).glob("*.shp"))[0]
-    d[key] = gpd.read_file(shp_file)
+    blob = bucket.blob(shapefile_blobs[key)
+    with blob.open('r) as f:
+                   d[key] = gpd.read_file(f)
   
   school_districts = d['school_district']
   council_districts = d['council_district']
