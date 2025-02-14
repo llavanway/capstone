@@ -157,7 +157,7 @@ with DAG(
     file_tasks = create_shapefile_tasks(dag, 'plavan1-capstone')
 
     create_metrics = PythonOperator(
-        task_id='create_metrics'
+        task_id='create_metrics',
         python_callable=create_metrics
     )
     
