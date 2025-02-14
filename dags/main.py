@@ -107,7 +107,12 @@ def download_and_extract_to_gcs(url: str, bucket_name: str, blob_path: str) -> N
             
         except BadZipFile:
             # Handle as single file
-            filename = os.path.basename(url)
+            if "Content-Disposition" in response.headers:
+                content_disposition = response.headers["Content-Disposition"]
+                    if "filename=" in content_disposition:
+                        filename = content_disposition.split("filename=")[1].strip('"')
+            else:
+                filename = 'file_{}'.format(datetime.now())
             blob = bucket.blob(f"{blob_path}/{filename}")
             blob.upload_from_string(response.content) 
             logger.info(f"Successfully uploaded 1 file to {blob_path}")
