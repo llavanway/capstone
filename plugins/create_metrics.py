@@ -8,6 +8,7 @@ from pathlib import Path
 import pandas as pd
 import geopandas as gpd
 import logging
+import tempfile
 
 logger = logging.getLogger(__name__)
 
@@ -229,10 +230,40 @@ def create_metrics():
     
     final_districts['CensusTract'] = final_districts['GEOID'].str.slice(start=5,stop=11)
     final_districts['CensusID'] = final_districts['GEOID'].str.slice(start=0,stop=11).astype('int64')
+
+    # # separate geometry only to upload to Tableau
+
+    final_geometry = final_data[['geometry','BoroCD','SchoolDist','CounDist','GEOID','CensusTract']]
+
+    # Convert GeoDataFrame to GeoJSON string
+    final_geometry = final_geometry.to_json(driver='GeoJSON')
     
-    final_data = final_districts.copy()
+    # Create file-like object from GeoJSON string
+    file_content = io.BytesIO(final_geometry.encode('utf-8'))
+    
+    # Prepare file metadata
+    file_metadata = {
+        'name': 'final_geometry.geojson',
+        'mimeType': 'application/geo+json',
+        'parents': ['1DU72-veBciQ2sxE-hrIDilnM_wxjmx6Y']
+    }
+    
+    # Create media object from bytes
+    media = MediaIoBaseUpload(
+        file_content,
+        mimetype='application/geo+json',
+        resumable=True
+    )
+    
+    # Upload file
+    file = service.files().create(
+        body=file_metadata,
+        media_body=media,
+        fields='id, webViewLink'
+    ).execute()
     
     # Download and read metric files
+    final_data = final_districts.copy()
     housing_df = read_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
     school_cap_df = read_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
     transit_df = read_csv_from_drive(drive_service, metric_folder_ids['transit_access'],'New York_36_transit_census_tract_2022.csv')
