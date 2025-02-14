@@ -20,11 +20,12 @@ services:
     volumes:
       - ./airflow_home:/opt/airflow
       - ./dags:/opt/airflow/dags
+      - ./requirements.txt:/requirements.txt
       - ./plugins:/opt/airflow/plugins
     networks:
       - airflow-network
     command: >
-      bash -c "airflow db init &&
+      bash -c "pip install -r /requirements.txt && airflow db init &&
                airflow users create --username admin --password admin --firstname Air --lastname Flow --role Admin --email admin@example.com &&
                airflow webserver"
 
@@ -44,10 +45,12 @@ services:
     volumes:
       - ./airflow_home:/opt/airflow
       - ./dags:/opt/airflow/dags
+      - ./requirements.txt:/requirements.txt
       - ./plugins:/opt/airflow/plugins
     networks:
       - airflow-network
-    command: airflow scheduler
+    command: >
+      bash -c "pip install -r /requirements.txt && airflow scheduler"
 
 networks:
   airflow-network:
