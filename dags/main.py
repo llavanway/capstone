@@ -186,10 +186,10 @@ with DAG(
     # Create shapefile processing task group
     file_tasks = create_file_tasks(dag)
 
-    # create_metrics = PythonOperator(
-    #     task_id='create_metrics',
-    #     python_callable=create_metrics
-    # )
+    create_metrics = PythonOperator(
+        task_id='create_metrics',
+        python_callable=create_metrics
+    )
     
     # End task
     end_task = PythonOperator(
@@ -198,5 +198,4 @@ with DAG(
     )
     
     # Define task dependencies
-    # start_task >> file_tasks >> create_metrics >> end_task
-    start_task >> file_tasks >> end_task
+    start_task >> file_tasks >> create_metrics >> end_task
