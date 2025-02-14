@@ -22,10 +22,10 @@ def create_metrics():
   gcp_bucket = 'plavan1-capstone'
   
   shapefile_blobs = {
-      'community_district': 'raw_shapefiles/nyc_community_districts',
-      'council_district': 'raw_shapefiles/nyc_council_districts',
-      'school_district': 'raw_shapefiles/nyc_school_districts',
-      'census_block': 'raw_shapefiles/census_blocks'
+      'community_district': 'raw_shapefiles/nyc_community_districts/nycd.shp',
+      'council_district': 'raw_shapefiles/nyc_council_districts/nycc.shp',
+      'school_district': 'raw_shapefiles/nyc_school_districts/nysd.shp',
+      'census_block': 'raw_shapefiles/census_blocks/nycb.shp'
   }
   
   metric_blobs = {
@@ -33,15 +33,44 @@ def create_metrics():
       'school_capacity': 'raw_metrics/nyc_school_capacity/Enrollment_Capacity_And_Utilization_Reports_20250213.csv',
       'transit_access': 'raw_metrics/ny_transit_access/New York_36_transit_census_tract_2022.csv'
   }
+
+  storage_client = get_gcs_client()
+  bucket = storage_client.bucket(gcp_bucket)
+
+  # Create a temporary directory to store shapefile components
+  temp_dir = '/tmp/shapefiles'
+  os.makedirs(temp_dir, exist_ok=True)
   
   d = {}
   
   for key in shapefile_blobs:
-    storage_client = get_gcs_client()
-    bucket = storage_client.bucket(gcp_bucket)
-    blob = bucket.blob(shapefile_blobs[key])
-    with blob.open('rb') as f:
-      d[key] = gpd.read_file(f)
+    # Download all shapefile components (.shp, .shx, .dbf, .prj)
+    base_path = shapefile_blobs[key]
+    local_files = []
+    
+    for ext in ['.shp', '.shx', '.dbf', '.prj']:
+        blob = bucket.blob(f"{base_path}{ext}")
+        local_path = f"{temp_dir}/{key}{ext}"
+        
+        try:
+            blob.download_to_filename(local_path)
+            local_files.append(local_path)
+        except Exception as e:
+            print(f"Warning: Could not download {ext} file: {e}")
+    
+    # Read the shapefile from the local filesystem
+    try:
+        d[key] = gpd.read_file(f"{temp_dir}/{key}.shp")
+    except Exception as e:
+        print(f"Error reading shapefile for {key}: {e}")
+        continue
+    
+    # Clean up downloaded files
+    for file in local_files:
+        try:
+            os.remove(file)
+        except OSError:
+            pass
   
   school_districts = d['school_district']
   council_districts = d['council_district']
