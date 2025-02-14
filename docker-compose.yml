@@ -20,6 +20,7 @@ services:
     volumes:
       - ./airflow_home:/opt/airflow
       - ./dags:/opt/airflow/dags
+      - ./plugins:/opt/airflow/plugins
     networks:
       - airflow-network
     command: >
@@ -43,6 +44,7 @@ services:
     volumes:
       - ./airflow_home:/opt/airflow
       - ./dags:/opt/airflow/dags
+      - ./plugins:/opt/airflow/plugins
     networks:
       - airflow-network
     command: airflow scheduler
