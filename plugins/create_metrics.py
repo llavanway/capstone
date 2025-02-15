@@ -9,17 +9,11 @@ import pandas as pd
 import geopandas as gpd
 import logging
 import tempfile
+from process_shapefiles import get_drive_client
 
 logger = logging.getLogger(__name__)
 
 def create_metrics():
-
-    shapefile_folder_ids = {
-        'community_district': '1zeKrWm_pWx4egQz37XNFzFvfsEzKYheG',
-        'council_district': '1ebeUn6Or1m_D5GI2jDGmO2zb20wXcIQy',
-        'school_district': '1rlTB61qxmds6VHWLGhuRMrNNfSsmrrVF',
-        'census_block': '1ypDODEoBkxrem_1vKIXEUNQ53YoJjiDN'
-    }
     
     metric_folder_ids = {
         'housing_units': '1mVIjaxCs_KZeirJbVP97AE4CHp_KcwXK',
@@ -27,17 +21,9 @@ def create_metrics():
         'transit_access': '1pNWbeItk9eFCs3E423dS1BPZIIKyU_2K'
     }
 
+    final_geometry_folder_id = '1PULzSCK0NCcN2b5j7grMaBL6OMvTGJ9G'
+    
     final_metrics_folder_id = '1DU72-veBciQ2sxE-hrIDilnM_wxjmx6Y'
-
-    def get_drive_client():
-        """Initialize and return a Google Drive client."""
-        creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-        if not creds_json:
-            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not found")
-        
-        creds_dict = json.loads(creds_json)
-        credentials = service_account.Credentials.from_service_account_info(creds_dict)
-        return build('drive', 'v3', credentials=credentials)
 
     def clear_folder(service, folder_id):
         """Delete all files in the specified folder."""
@@ -135,135 +121,23 @@ def create_metrics():
         except Exception as e:
             logger.error(f"Error reading CSV file '{file_name}' from folder '{folder_name}': {e}")
             raise
-
+    
+    # Authenticate
     drive_service = get_drive_client()
     
-    # Create a temporary directory to store shapefile components
-    temp_dir = '/tmp/shapefiles'
-    os.makedirs(temp_dir, exist_ok=True)
-    
-    d = {}
-    
-    for key in shapefile_folder_ids:
-        # List files in the shapefile folder
-        results = drive_service.files().list(
-            q=f"'{shapefile_folder_ids[key]}' in parents",
-            fields="files(id, name)").execute()
-        files = results.get('files', [])
-        
-        local_files = []
-        for file in files:
-            ext = os.path.splitext(file['name'])[1]
-            if ext in ['.shp', '.shx', '.dbf', '.prj', '.xml']:
-                local_path = f"{temp_dir}/{key}{ext}"
-                if download_file(drive_service, file['id'], local_path):
-                    local_files.append(local_path)
-        
-        # Read the shapefile from the local filesystem
-        try:
-            d[key] = gpd.read_file(f"{temp_dir}/{key}.shp")
-        except Exception as e:
-            logger.error(f"Error reading shapefile for {key}: {e}")
-            continue
-        
-        # Clean up downloaded files
-        for file in local_files:
-            try:
-                os.remove(file)
-            except OSError:
-                pass
+    # Get geometry and create final_data dataframe
+    query = f"name = 'final_geometry.geojson' and '{folder_id}' in parents"
+    result = service.files().list(q=query, fields='files(id)', pageSize=1).execute()
+    final_geometry_file_id = result['files'][0]['id']
+    request = drive_service.files().get_media(fileId=final_geometry_file_id)
+    fh = io.BytesIO()
+    downloader = MediaIoBaseDownload(fh, request)
+    _, done = downloader.next_chunk()
+    fh.seek(0)
+    geojson = json.loads(fh.read().decode('utf-8'))
+    final_data = pd.json_normalize(geojson['features'])
 
-    # Check shapefile downloads
-    logger.info('Shapefile dict keys:')
-    logger.info(list(d.keys()))
-    
-    school_districts = d['school_district']
-    council_districts = d['council_district']
-    community_districts = d['community_district']
-    census_blocks = d['census_block']
-    
-    # Create a new GeoDataFrame with community district centroids
-    community_centroids = community_districts.copy()
-    community_centroids.geometry = community_districts.geometry.centroid
-    
-    # Perform spatial joins using centroids
-    comm_school_join = gpd.sjoin(
-        community_centroids,
-        school_districts,
-        how='left',
-        predicate='within'
-    )
-    
-    comm_school_join.rename(columns={'index_right':'index_right_prior'}, inplace=True)
-    
-    council_join = gpd.sjoin(
-        comm_school_join,
-        council_districts,
-        how='left',
-        predicate='within'
-    )
-    
-    council_join.rename(columns={'index_right':'index_right_prior'}, inplace=True)
-    
-    census_join = gpd.sjoin(
-        council_join,
-        census_blocks,
-        how='left',
-        predicate='within'
-    )
-    
-    final_districts = census_join[[
-        'BoroCD',
-        'SchoolDist',
-        'CounDist',
-        'GEOID',
-        'geometry'
-    ]]
-    
-    final_districts = final_districts.merge(
-        community_districts[['BoroCD', 'geometry']],
-        on='BoroCD',
-        suffixes=('_centroid', '')
-    )
-    
-    final_districts = final_districts[~final_districts['BoroCD'].isin([164,226,227,228,355,356,480,481,482,483,484,595])]
-    
-    final_districts['CensusTract'] = final_districts['GEOID'].str.slice(start=5,stop=11)
-    final_districts['CensusID'] = final_districts['GEOID'].str.slice(start=0,stop=11).astype('int64')
-
-    # # separate geometry only to upload to Tableau
-
-    final_geometry = final_districts[['geometry','BoroCD','SchoolDist','CounDist','GEOID','CensusTract']]
-
-    # Convert GeoDataFrame to GeoJSON string
-    final_geometry = final_geometry.to_json()
-    
-    # Create file-like object from GeoJSON string
-    file_content = io.BytesIO(final_geometry.encode('utf-8'))
-    
-    # Prepare file metadata
-    file_metadata = {
-        'name': 'final_geometry.geojson',
-        'mimeType': 'application/geo+json',
-        'parents': ['1DU72-veBciQ2sxE-hrIDilnM_wxjmx6Y']
-    }
-    
-    # Create media object from bytes
-    media = MediaIoBaseUpload(
-        file_content,
-        mimetype='application/geo+json',
-        resumable=True
-    )
-    
-    # Upload file
-    file = drive_service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields='id, webViewLink'
-    ).execute()
-    
-    # Download and read metric files
-    final_data = final_districts.copy()
+    # Get raw metric files
     housing_df = read_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
     school_cap_df = read_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
     transit_df = read_csv_from_drive(drive_service, metric_folder_ids['transit_access'],'New York_36_transit_census_tract_2022.csv')
@@ -281,7 +155,7 @@ def create_metrics():
     final_data = final_data.merge(school_cap_df[['Geo Dist','SchoolCapacity']], left_on='SchoolDist',right_on='Geo Dist')
     final_data = final_data.merge(transit_df[['Census ID','JobAccess']][transit_df['Threshold'] == 45], left_on='CensusID',right_on='Census ID')
     
-    # Calculate metrics
+    # Calculate additional metrics
     final_data['tertile_units_15_24'] = pd.qcut(final_data['units_15_24'],q=3,labels=[3,2,1]).astype('int32')
     final_data['tertile_SchoolCapacity'] = pd.qcut(final_data['SchoolCapacity'],q=3,labels=[3,2,1]).astype('int32')
     final_data['tertile_JobAccess'] = pd.qcut(final_data['JobAccess'],q=3,labels=[3,2,1]).astype('int32')
@@ -306,7 +180,7 @@ def create_metrics():
         logger.error("Failed to clear final metrics folder")
         return
     
-    # Convert to CSV and upload to Drive
+    # Upload final_metrics to Drive
     csv_buffer = io.StringIO()
     final_data.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
@@ -317,7 +191,6 @@ def create_metrics():
         resumable=True
     )
     
-    # Create the file in the final_metrics folder
     file_metadata = {
         'name': 'final_metrics.csv',
         'parents': [final_metrics_folder_id]
