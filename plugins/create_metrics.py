@@ -66,37 +66,27 @@ def create_metrics():
             logger.error(f"Error downloading file {file_id}: {e}")
             return False
 
-    def read_csv_from_drive(service, folder_name, file_name):
+    def read_csv_from_drive(service, folder_id, file_name):
         """
         Read a CSV file from Google Drive into a pandas DataFrame by searching for 
         the file name within the specified folder.
         
         Args:
             service: Google Drive API service instance
-            folder_name: Name of the folder to search in
+            folder_id: ID of the folder to search in
             file_name: Name of the file to download
             
         Returns:
             pandas DataFrame containing the CSV data
         """
         try:
-            # First, find the folder ID by name
-            folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
-            folder_results = service.files().list(q=folder_query, spaces='drive', fields='files(id)').execute()
-            folder_items = folder_results.get('files', [])
-            
-            if not folder_items:
-                raise FileNotFoundError(f"Folder '{folder_name}' not found")
-                
-            folder_id = folder_items[0]['id']
-            
-            # Then find the file within that folder
+            # Find the file within the folder using folder ID directly
             file_query = f"name='{file_name}' and '{folder_id}' in parents"
             file_results = service.files().list(q=file_query, spaces='drive', fields='files(id, mimeType)').execute()
             file_items = file_results.get('files', [])
             
             if not file_items:
-                raise FileNotFoundError(f"File '{file_name}' not found in folder '{folder_name}'")
+                raise FileNotFoundError(f"File '{file_name}' not found in folder with ID '{folder_id}'")
                 
             file_id = file_items[0]['id']
             mime_type = file_items[0]['mimeType']
