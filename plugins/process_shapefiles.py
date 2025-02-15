@@ -9,6 +9,7 @@ import pandas as pd
 import geopandas as gpd
 import logging
 import tempfile
+from process_shapefiles import get_drive_client
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +28,7 @@ def process_shapefiles():
         'transit_access': '1pNWbeItk9eFCs3E423dS1BPZIIKyU_2K'
     }
 
-    final_metrics_folder_id = '1DU72-veBciQ2sxE-hrIDilnM_wxjmx6Y'
+    final_geometry_folder_id = '1PULzSCK0NCcN2b5j7grMaBL6OMvTGJ9G'
 
     def get_drive_client():
         """Initialize and return a Google Drive client."""
@@ -79,62 +80,6 @@ def process_shapefiles():
         except Exception as e:
             logger.error(f"Error downloading file {file_id}: {e}")
             return False
-
-    def read_csv_from_drive(service, folder_name, file_name):
-        """
-        Read a CSV file from Google Drive into a pandas DataFrame by searching for 
-        the file name within the specified folder.
-        
-        Args:
-            service: Google Drive API service instance
-            folder_name: Name of the folder to search in
-            file_name: Name of the file to download
-            
-        Returns:
-            pandas DataFrame containing the CSV data
-        """
-        try:
-            # First, find the folder ID by name
-            folder_query = f"name='{folder_name}' and mimeType='application/vnd.google-apps.folder'"
-            folder_results = service.files().list(q=folder_query, spaces='drive', fields='files(id)').execute()
-            folder_items = folder_results.get('files', [])
-            
-            if not folder_items:
-                raise FileNotFoundError(f"Folder '{folder_name}' not found")
-                
-            folder_id = folder_items[0]['id']
-            
-            # Then find the file within that folder
-            file_query = f"name='{file_name}' and '{folder_id}' in parents"
-            file_results = service.files().list(q=file_query, spaces='drive', fields='files(id, mimeType)').execute()
-            file_items = file_results.get('files', [])
-            
-            if not file_items:
-                raise FileNotFoundError(f"File '{file_name}' not found in folder '{folder_name}'")
-                
-            file_id = file_items[0]['id']
-            mime_type = file_items[0]['mimeType']
-            
-            # Handle different file types
-            if mime_type == 'application/vnd.google-apps.spreadsheet':
-                # For Google Sheets, use the export feature
-                request = service.files().export_media(fileId=file_id, mimeType='text/csv')
-            else:
-                # For regular CSV files, use get_media
-                request = service.files().get_media(fileId=file_id)
-            
-            fh = io.BytesIO()
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while done is False:
-                status, done = downloader.next_chunk()
-            
-            fh.seek(0)
-            return pd.read_csv(fh)
-            
-        except Exception as e:
-            logger.error(f"Error reading CSV file '{file_name}' from folder '{folder_name}': {e}")
-            raise
 
     drive_service = get_drive_client()
     
@@ -231,7 +176,7 @@ def process_shapefiles():
     final_districts['CensusTract'] = final_districts['GEOID'].str.slice(start=5,stop=11)
     final_districts['CensusID'] = final_districts['GEOID'].str.slice(start=0,stop=11).astype('int64')
 
-    # # separate geometry only to upload to Tableau
+    # Separate geometry only
 
     final_geometry = final_districts[['geometry','BoroCD','SchoolDist','CounDist','GEOID','CensusTract']]
 
@@ -245,7 +190,7 @@ def process_shapefiles():
     file_metadata = {
         'name': 'final_geometry.geojson',
         'mimeType': 'application/geo+json',
-        'parents': ['1DU72-veBciQ2sxE-hrIDilnM_wxjmx6Y']
+        'parents': [final_geometry_folder_id]
     }
     
     # Create media object from bytes
@@ -254,6 +199,11 @@ def process_shapefiles():
         mimetype='application/geo+json',
         resumable=True
     )
+
+    # Clear destination directory
+    if not clear_folder(drive_service, final_geometry_folder_id):
+        logger.error("Failed to clear final geometry folder")
+        return
     
     # Upload file
     file = drive_service.files().create(
@@ -261,3 +211,5 @@ def process_shapefiles():
         media_body=media,
         fields='id, webViewLink'
     ).execute()
+
+drive_service.close()
