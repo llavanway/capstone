@@ -125,7 +125,7 @@ def create_metrics():
     _, done = downloader.next_chunk()
     fh.seek(0)
     geojson = json.loads(fh.read().decode('utf-8'))
-    final_data = pd.json_normalize(geojson['features'], path='properties')
+    final_data = pd.json_normalize(geojson['features'])
 
     logger.info("final_data converted to pandas dataframe:")
     logger.info(final_data.head())
