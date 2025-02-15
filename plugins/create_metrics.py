@@ -127,6 +127,9 @@ def create_metrics():
     geojson = json.loads(fh.read().decode('utf-8'))
     final_data = pd.json_normalize(geojson['features'])
 
+    logger.info("final_data converted to pandas dataframe:")
+    logger.info(final_data.head())
+
     # Get raw metric files
     housing_df = read_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
     school_cap_df = read_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
