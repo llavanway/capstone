@@ -129,6 +129,8 @@ def create_metrics():
 
     logger.info("final_data converted to pandas dataframe:")
     logger.info(final_data.head())
+    logger.info("Available columns in final_data:")
+    logger.info(final_data.columns.tolist())
 
     # Get raw metric files
     housing_df = read_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
