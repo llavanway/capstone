@@ -134,7 +134,9 @@ def create_metrics():
 
     # Change column names
     logger.info("Renaming columns in final_data...")
-    final_data = final_data.rename(columns={'properties.BoroCD': 'BoroCD','properties.SchoolDist': 'SchoolDist', 'properties.CounDist' :'CounDist', 'properties.GEOID': 'GEOID','properties.CensusTract':'CensusTract'})
+    final_data = final_data.rename(columns={'properties.BoroCD': 'BoroCD','properties.SchoolDist': 'SchoolDist', 
+                                            'properties.CounDist' :'CounDist', 'properties.GEOID': 'GEOID',
+                                            'properties.CensusTract':'CensusTract','properties.CensusID':'CensusID'})
     logger.info("Available columns in final_data:")
     logger.info(final_data.columns.tolist())
 
