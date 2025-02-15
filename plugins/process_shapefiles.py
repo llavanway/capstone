@@ -9,6 +9,7 @@ import pandas as pd
 import geopandas as gpd
 import logging
 import tempfile
+from get_drive_client import get_drive_client
 
 logger = logging.getLogger(__name__)
 
@@ -28,16 +29,6 @@ def process_shapefiles():
     }
 
     final_geometry_folder_id = '1PULzSCK0NCcN2b5j7grMaBL6OMvTGJ9G'
-
-    def get_drive_client():
-        """Initialize and return a Google Drive client."""
-        creds_json = os.getenv('GOOGLE_APPLICATION_CREDENTIALS')
-        if not creds_json:
-            raise ValueError("GOOGLE_APPLICATION_CREDENTIALS environment variable not found")
-        
-        creds_dict = json.loads(creds_json)
-        credentials = service_account.Credentials.from_service_account_info(creds_dict)
-        return build('drive', 'v3', credentials=credentials)
 
     def clear_folder(service, folder_id):
         """Delete all files in the specified folder."""
