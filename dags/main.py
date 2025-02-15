@@ -14,6 +14,7 @@ import logging
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaIoBaseUpload
 sys.path.append('/opt/airflow/plugins')
+from process_shapefiles import process_shapefiles
 from create_metrics import create_metrics
 
 # Configure logging
@@ -208,6 +209,11 @@ with DAG(
     # Create shapefile processing task group
     file_tasks = create_file_tasks(dag)
 
+    process_shapefiles = PythonOperator(
+        task_id='process_shapefiles',
+        python_callable=process_shapefiles
+    )
+
     create_metrics = PythonOperator(
         task_id='create_metrics',
         python_callable=create_metrics
@@ -220,4 +226,4 @@ with DAG(
     )
     
     # Define task dependencies
-    start_task >> file_tasks >> create_metrics >> end_task
+    start_task >> file_tasks >> process_shapefiles >> create_metrics >> end_task
