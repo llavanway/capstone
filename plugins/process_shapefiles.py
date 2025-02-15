@@ -168,7 +168,7 @@ def process_shapefiles():
 
     # Separate geometry only
 
-    final_geometry = final_districts[['geometry','BoroCD','SchoolDist','CounDist','GEOID','CensusTract']]
+    final_geometry = final_districts[['geometry','BoroCD','SchoolDist','CounDist','GEOID','CensusTract','CensusID']]
 
     # Convert GeoDataFrame to GeoJSON string
     final_geometry = final_geometry.to_json()
