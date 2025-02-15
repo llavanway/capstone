@@ -132,6 +132,9 @@ def create_metrics():
     logger.info("Available columns in final_data:")
     logger.info(final_data.columns.tolist())
 
+    # Change column names
+    final_data = final_data.rename(columns={'properties.BoroCD': 'BoroCD','properties.SchoolDist': 'SchoolDist', 'properties.CounDist' :'CounDist', 'properties.GEOID': 'GEOID','properties.CensusTract':'CensusTract'})
+
     # Get raw metric files
     housing_df = read_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
     school_cap_df = read_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
