@@ -9,7 +9,7 @@ import pandas as pd
 import geopandas as gpd
 import logging
 import tempfile
-from process_shapefiles import get_drive_client
+from get_drive_client import get_drive_client
 
 logger = logging.getLogger(__name__)
 
