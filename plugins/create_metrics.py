@@ -126,8 +126,8 @@ def create_metrics():
     drive_service = get_drive_client()
     
     # Get geometry and create final_data dataframe
-    query = f"name = 'final_geometry.geojson' and '{folder_id}' in parents"
-    result = service.files().list(q=query, fields='files(id)', pageSize=1).execute()
+    query = f"name = 'final_geometry.geojson' and '{final_geometry_folder_id}' in parents"
+    result = drive_service.files().list(q=query, fields='files(id)', pageSize=1).execute()
     final_geometry_file_id = result['files'][0]['id']
     request = drive_service.files().get_media(fileId=final_geometry_file_id)
     fh = io.BytesIO()
