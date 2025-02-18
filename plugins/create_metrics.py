@@ -1,15 +1,12 @@
-import os
 import json
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
-from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload
+from googleapiclient.http import MediaIoBaseDownload, MediaIoBaseUpload, MediaInMemoryUpload
 import io
-from pathlib import Path
 import pandas as pd
-import geopandas as gpd
 import logging
-import tempfile
 from get_drive_client import get_drive_client
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -48,25 +45,7 @@ def create_metrics():
             logger.error(f"Error clearing folder {folder_id}: {e}")
             return False
 
-    def download_file(service, file_id, output_path):
-        """Download a file from Google Drive."""
-        try:
-            request = service.files().get_media(fileId=file_id)
-            fh = io.BytesIO()
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while done is False:
-                status, done = downloader.next_chunk()
-            fh.seek(0)
-            
-            with open(output_path, 'wb') as f:
-                f.write(fh.read())
-            return True
-        except Exception as e:
-            logger.error(f"Error downloading file {file_id}: {e}")
-            return False
-
-    def read_csv_from_drive(service, folder_id, file_name):
+    def read_write_csv_from_drive(service, folder_id, file_name, mode='read', write_content=None):
         """
         Read a CSV file from Google Drive into a pandas DataFrame by searching for 
         the file name within the specified folder.
@@ -85,31 +64,65 @@ def create_metrics():
             file_results = service.files().list(q=file_query, spaces='drive', fields='files(id, mimeType)').execute()
             file_items = file_results.get('files', [])
             
-            if not file_items:
+            if mode == 'read' and not file_items:
                 raise FileNotFoundError(f"File '{file_name}' not found in folder with ID '{folder_id}'")
                 
             file_id = file_items[0]['id']
             mime_type = file_items[0]['mimeType']
+
+            if mode == 'read':
             
-            # Handle different file types
-            if mime_type == 'application/vnd.google-apps.spreadsheet':
-                # For Google Sheets, use the export feature
-                request = service.files().export_media(fileId=file_id, mimeType='text/csv')
-            else:
-                # For regular CSV files, use get_media
-                request = service.files().get_media(fileId=file_id)
+                # Handle different file types
+                if mime_type == 'application/vnd.google-apps.spreadsheet':
+                    # For Google Sheets, use the export feature
+                    request = service.files().export_media(fileId=file_id, mimeType='text/csv')
+                else:
+                    # For regular CSV files, use get_media
+                    request = service.files().get_media(fileId=file_id)
+                
+                fh = io.BytesIO()
+                downloader = MediaIoBaseDownload(fh, request)
+                done = False
+                while done is False:
+                    status, done = downloader.next_chunk()
+                
+                fh.seek(0)
+                return pd.read_csv(fh)
+
+            elif mode == 'write' and not file_items:
+                # file not found, write new file
+                file_metadata = {
+                'name': file_name,
+                'parents': [folder_id],
+                'mimeType': 'text/csv'
+                }
+
+                media = MediaInMemoryUpload(
+                write_content.encode('utf-8'),
+                mimetype='text/csv',
+                resumable=True
+                )
             
-            fh = io.BytesIO()
-            downloader = MediaIoBaseDownload(fh, request)
-            done = False
-            while done is False:
-                status, done = downloader.next_chunk()
-            
-            fh.seek(0)
-            return pd.read_csv(fh)
+                file = service.files().create(
+                    body=file_metadata,
+                    media_body=media,
+                    fields='id'
+                ).execute()
+
+            elif mode == 'write':
+                # overwrite existing file
+                media = MediaInMemoryUpload(
+                write_content.encode('utf-8'),
+                mimetype='text/csv'
+                )
+                
+                updated_file = service.files().update(
+                    fileId=file_id,
+                    media_body=media
+                ).execute()
             
         except Exception as e:
-            logger.error(f"Error reading CSV file '{file_name}' from folder '{folder_name}': {e}")
+            logger.error(f"Error handling CSV file '{file_name}' from folder '{folder_id}': {e}; mode was {mode}")
             raise
     
     # Authenticate
@@ -141,9 +154,9 @@ def create_metrics():
     logger.info(final_data.columns.tolist())
 
     # Get raw metric files
-    housing_df = read_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
-    school_cap_df = read_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
-    transit_df = read_csv_from_drive(drive_service, metric_folder_ids['transit_access'],'New York_36_transit_census_tract_2022.csv')
+    housing_df = read_write_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
+    school_cap_df = read_write_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
+    transit_df = read_write_csv_from_drive(drive_service, metric_folder_ids['transit_access'],'New York_36_transit_census_tract_2022.csv')
     
     # Process metrics
     housing_df['units_15_24'] = housing_df[['comp2015', 'comp2016', 'comp2017','comp2018','comp2019',
@@ -185,7 +198,8 @@ def create_metrics():
     final_data['rank_JobAccess'] = final_data['JobAccess'].rank(method='max')
     final_data['rank_SchoolCapacity'] = final_data['SchoolCapacity'].rank(method='max')
 
-    # Interpretable district name
+    # Boro and interpretable district name
+    final_data['boro'] = 'Unknown'
     final_data['interpretable_district'] = 'Unknown'
     final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '1') , 'boro'] = 'Manhattan'
     final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '2') , 'boro'] = 'Bronx'
@@ -195,37 +209,17 @@ def create_metrics():
     final_data['interpretable_district'] = final_data['BoroCD'] + ' Community District ' + final_data['BoroCD'].astype('str').str[1:3]
 
     # Boro district number
-    final_data['boro_district_number'] = '0'
-    final_data['boro_distict_number'] = final_data['BoroCD'].astype('str').str[1:3].astype('int')
+    final_data['boro_district_number'] = final_data['BoroCD'].astype('str').str[1:3].astype('int')
 
     # Process timestamp
-    housing_df['data_process_dt'] = datetime.now()
+    final_data['data_process_dt'] = datetime.now()
 
-    # Clear the final metrics folder before uploading
-    if not clear_folder(drive_service, final_metrics_folder_id):
-        logger.error("Failed to clear final metrics folder")
-        return
-    
-    # Upload final_metrics to Drive
+    # Convert df to csv
     csv_buffer = io.StringIO()
     final_data.to_csv(csv_buffer, index=False)
     csv_buffer.seek(0)
-    
-    media = MediaIoBaseUpload(
-        io.BytesIO(csv_buffer.getvalue().encode()),
-        mimetype='text/csv',
-        resumable=True
-    )
-    
-    file_metadata = {
-        'name': 'final_metrics.csv',
-        'parents': [final_metrics_folder_id]
-    }
-    
-    drive_service.files().create(
-        body=file_metadata,
-        media_body=media,
-        fields='id'
-    ).execute()
+
+    # Upload or overwrite final_metrics file
+    read_write_csv_from_drive(drive_service,final_metrics_folder_id,'final_metrics.csv',mode='write',write_content=csv_buffer)
     
     drive_service.close()
