@@ -158,17 +158,19 @@ def create_metrics():
     final_data = final_data.merge(school_cap_df[['Geo Dist','SchoolCapacity']], left_on='SchoolDist',right_on='Geo Dist')
     final_data = final_data.merge(transit_df[['Census ID','JobAccess']][transit_df['Threshold'] == 45], left_on='CensusID',right_on='Census ID')
     
-    # Calculate additional metrics
+    # Tertiles
     final_data['tertile_units_15_24'] = pd.qcut(final_data['units_15_24'],q=3,labels=[3,2,1]).astype('int32')
     final_data['tertile_SchoolCapacity'] = pd.qcut(final_data['SchoolCapacity'],q=3,labels=[3,2,1]).astype('int32')
     final_data['tertile_JobAccess'] = pd.qcut(final_data['JobAccess'],q=3,labels=[3,2,1]).astype('int32')
     final_data['JobAccessRating'] = pd.qcut(final_data['JobAccess'],q=3,labels=['Low','Medium','High'])
     final_data['tertile_sum'] = final_data[['tertile_units_15_24','tertile_SchoolCapacity','tertile_JobAccess']].sum(axis=1).astype('int32')
-    
+
+    # Enrollment status
     final_data['SchoolEnrollmentStatus'] = 'Default'
     final_data.loc[final_data['SchoolCapacity'].between(-1000000,1000), 'SchoolEnrollmentStatus'] = 'Over enrolled'
     final_data.loc[final_data['SchoolCapacity'] > 1000, 'SchoolEnrollmentStatus'] = 'Under enrolled'
-    
+
+    # Housing ready
     final_data['HousingReadyDistrict'] = 'No'
     final_data.loc[(final_data['SchoolEnrollmentStatus'] == 'Under enrolled') & 
                    (final_data['JobAccessRating'].isin(['Medium','High'])), 'HousingReadyDistrict'] = 'Yes'
@@ -177,7 +179,25 @@ def create_metrics():
     final_data['HousingReadyDistrict2'] = 'No'
     final_data.loc[(final_data['SchoolEnrollmentStatus'] == 'Under enrolled') & 
                    (final_data['JobAccessRating'].isin(['Medium','High','Very High'])), 'HousingReadyDistrict2'] = 'Yes'
-    
+
+    # Ranks
+    final_data['rank_units_15_24'] = final_data['units_15_24'].rank(method='max')
+    final_data['rank_JobAccess'] = final_data['JobAccess'].rank(method='max')
+    final_data['rank_SchoolCapacity'] = final_data['SchoolCapacity'].rank(method='max')
+
+    # Interpretable district name
+    final_data['interpretable_district'] = 'Unknown'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '1') , 'boro'] = 'Manhattan'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '2') , 'boro'] = 'Bronx'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '3') , 'boro'] = 'Brooklyn'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '4') , 'boro'] = 'Queens'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '5') , 'boro'] = 'Staten Island'
+    final_data['interpretable_district'] = final_data['BoroCD'] + ' Community District ' + final_data['BoroCD'].astype('str').str[1:3]
+
+    # Boro district number
+    final_data['boro_district_number'] = '0'
+    final_data['boro_distict_number'] = final_data['BoroCD'].astype('str').str[1:3].astype('int')
+
     # Clear the final metrics folder before uploading
     if not clear_folder(drive_service, final_metrics_folder_id):
         logger.error("Failed to clear final metrics folder")
