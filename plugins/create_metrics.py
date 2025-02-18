@@ -22,28 +22,28 @@ def create_metrics():
     
     final_metrics_folder_id = '1DU72-veBciQ2sxE-hrIDilnM_wxjmx6Y'
 
-    def clear_folder(service, folder_id):
-        """Delete all files in the specified folder."""
-        try:
-            # List all files in the folder
-            results = service.files().list(
-                q=f"'{folder_id}' in parents",
-                fields="files(id, name)"
-            ).execute()
-            files = results.get('files', [])
+    # def clear_folder(service, folder_id):
+    #     """Delete all files in the specified folder."""
+    #     try:
+    #         # List all files in the folder
+    #         results = service.files().list(
+    #             q=f"'{folder_id}' in parents",
+    #             fields="files(id, name)"
+    #         ).execute()
+    #         files = results.get('files', [])
             
-            # Delete each file
-            for file in files:
-                try:
-                    service.files().delete(fileId=file['id']).execute()
-                    logger.info(f"Deleted file: {file['name']}")
-                except Exception as e:
-                    logger.error(f"Error deleting file {file['name']}: {e}")
+    #         # Delete each file
+    #         for file in files:
+    #             try:
+    #                 service.files().delete(fileId=file['id']).execute()
+    #                 logger.info(f"Deleted file: {file['name']}")
+    #             except Exception as e:
+    #                 logger.error(f"Error deleting file {file['name']}: {e}")
             
-            return True
-        except Exception as e:
-            logger.error(f"Error clearing folder {folder_id}: {e}")
-            return False
+    #         return True
+    #     except Exception as e:
+    #         logger.error(f"Error clearing folder {folder_id}: {e}")
+    #         return False
 
     def read_write_csv_from_drive(service, folder_id, file_name, mode='read', write_content=None):
         """
@@ -89,37 +89,37 @@ def create_metrics():
                 fh.seek(0)
                 return pd.read_csv(fh)
 
-            elif mode == 'write' and not file_items:
-                # file not found, write new file
-                file_metadata = {
-                'name': file_name,
-                'parents': [folder_id],
-                'mimeType': 'text/csv'
-                }
+            if mode == 'write':
+                # convert to string for uploading
+                content_bytes = write_content.to_csv(index=False).encode('utf-8')
 
+                # prepare media
                 media = MediaInMemoryUpload(
-                write_content.encode('utf-8'),
+                content_bytes.encode('utf-8'),
                 mimetype='text/csv',
                 resumable=True
                 )
-            
-                file = service.files().create(
-                    body=file_metadata,
-                    media_body=media,
-                    fields='id'
-                ).execute()
 
-            elif mode == 'write':
-                # overwrite existing file
-                media = MediaInMemoryUpload(
-                write_content.encode('utf-8'),
-                mimetype='text/csv'
-                )
-                
-                updated_file = service.files().update(
-                    fileId=file_id,
-                    media_body=media
-                ).execute()
+                if not file_items:
+                    # file not found, write new file
+                    file_metadata = {
+                    'name': file_name,
+                    'parents': [folder_id],
+                    'mimeType': 'text/csv'
+                    }
+            
+                    file = service.files().create(
+                        body=file_metadata,
+                        media_body=media,
+                        fields='id'
+                    ).execute()
+
+                else:
+                    # overwrite existing file
+                    updated_file = service.files().update(
+                        fileId=file_id,
+                        media_body=media
+                    ).execute()
             
         except Exception as e:
             logger.error(f"Error handling CSV file '{file_name}' from folder '{folder_id}': {e}; mode was {mode}")
@@ -214,12 +214,13 @@ def create_metrics():
     # Process timestamp
     final_data['data_process_dt'] = datetime.now()
 
-    # Convert df to csv
-    csv_buffer = io.StringIO()
-    final_data.to_csv(csv_buffer, index=False)
-    csv_buffer.seek(0)
+    # # Convert df to csv
+    # csv_buffer = io.StringIO()
+    # final_data.to_csv(csv_buffer, index=False)
+    # csv_buffer.seek(0)
+    # csv_string = final_data.to_csv(index=False)
 
     # Upload or overwrite final_metrics file
-    read_write_csv_from_drive(drive_service,final_metrics_folder_id,'final_metrics.csv',mode='write',write_content=csv_buffer)
+    read_write_csv_from_drive(drive_service,final_metrics_folder_id,'final_metrics.csv',mode='write',write_content=final_data)
     
     drive_service.close()
