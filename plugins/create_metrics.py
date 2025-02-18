@@ -198,6 +198,9 @@ def create_metrics():
     final_data['boro_district_number'] = '0'
     final_data['boro_distict_number'] = final_data['BoroCD'].astype('str').str[1:3].astype('int')
 
+    # Process timestamp
+    housing_df['data_process_dt'] = datetime.now()
+
     # Clear the final metrics folder before uploading
     if not clear_folder(drive_service, final_metrics_folder_id):
         logger.error("Failed to clear final metrics folder")
