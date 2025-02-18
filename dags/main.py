@@ -176,7 +176,7 @@ def download_and_extract(url: str, folder_id: str) -> None:
 
 def create_file_tasks(dag):
     """Create tasks for downloading and processing files."""
-    with TaskGroup(group_id="file_processing") as file_group:
+    with TaskGroup(group_id="download_files") as file_group:
         for name, config in FILE_CONFIG.items():
             PythonOperator(
                 task_id=f"get_file_{name}",
