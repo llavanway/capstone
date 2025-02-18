@@ -47,16 +47,14 @@ def create_metrics():
 
     def read_write_csv_from_drive(service, folder_id, file_name, mode='read', write_content=None):
         """
-        Read a CSV file from Google Drive into a pandas DataFrame by searching for 
-        the file name within the specified folder.
+        Read or write a csv file from Google Drive.
         
         Args:
             service: Google Drive API service instance
             folder_id: ID of the folder to search in
             file_name: Name of the file to download
-            
-        Returns:
-            pandas DataFrame containing the CSV data
+            mode: read or write
+            write_content: file to write
         """
         try:
             # Find the file within the folder using folder ID directly
@@ -90,12 +88,13 @@ def create_metrics():
                 return pd.read_csv(fh)
 
             if mode == 'write':
-                # convert to string for uploading
-                content_bytes = write_content.to_csv(index=False).encode('utf-8')
+                # convert to csv for uploading
+                content_str = write_content.to_csv(index=False)
+                # content_bytes = write_content.to_csv(index=False).encode('utf-8')
 
                 # prepare media
                 media = MediaInMemoryUpload(
-                content_bytes.encode('utf-8'),
+                content_str.encode('utf-8'),
                 mimetype='text/csv',
                 resumable=True
                 )
