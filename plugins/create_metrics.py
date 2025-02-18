@@ -200,13 +200,13 @@ def create_metrics():
 
     # Boro and interpretable district name
     final_data['boro'] = 'Unknown'
-    final_data['interpretable_district'] = 'Unknown'
     final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '1') , 'boro'] = 'Manhattan'
     final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '2') , 'boro'] = 'Bronx'
     final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '3') , 'boro'] = 'Brooklyn'
     final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '4') , 'boro'] = 'Queens'
     final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '5') , 'boro'] = 'Staten Island'
-    final_data['interpretable_district'] = final_data['BoroCD'] + ' Community District ' + final_data['BoroCD'].astype('str').str[1:3]
+    final_data['interpretable_district'] = 'Unknown'
+    final_data['interpretable_district'] = final_data['boro'] + ' Community District ' + final_data['BoroCD'].astype('str').str[1:3]
 
     # Boro district number
     final_data['boro_district_number'] = final_data['BoroCD'].astype('str').str[1:3].astype('int')
