@@ -213,6 +213,9 @@ def create_metrics():
     # Process timestamp
     final_data['data_process_dt'] = datetime.now()
 
+    # Drop unnecessary geometry columns
+    final_data = final_data.drop(columns=['geometry.type', 'geometry.coordinates','type'])
+
     # # Convert df to csv
     # csv_buffer = io.StringIO()
     # final_data.to_csv(csv_buffer, index=False)
