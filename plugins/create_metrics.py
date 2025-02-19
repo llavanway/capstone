@@ -193,9 +193,9 @@ def create_metrics():
                    (final_data['JobAccessRating'].isin(['Medium','High','Very High'])), 'HousingReadyDistrict2'] = 'Yes'
 
     # Ranks
-    final_data['rank_units_15_24'] = final_data['units_15_24'].rank(ascending=False)
-    final_data['rank_JobAccess'] = final_data['JobAccess'].rank(ascending=False)
-    final_data['rank_SchoolCapacity'] = final_data['SchoolCapacity'].rank(ascending=False)
+    final_data['rank_units_15_24'] = final_data['units_15_24'].rank(method='min',ascending=False)
+    final_data['rank_JobAccess'] = final_data['JobAccess'].rank(method='min',ascending=False)
+    final_data['rank_SchoolCapacity'] = final_data['SchoolCapacity'].rank(method='min',ascending=False)
 
     # Boro and interpretable district name
     final_data['boro'] = 'Unknown'
