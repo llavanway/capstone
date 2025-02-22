@@ -153,11 +153,14 @@ def create_metrics():
     logger.info(final_data.columns.tolist())
 
     # Get raw metric files
-    housing_df = read_write_csv_from_drive(drive_service, metric_folder_ids['housing_units'],'HousingDB_by_CommunityDistrict.csv')
-    school_cap_df = read_write_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
-    transit_df = read_write_csv_from_drive(drive_service, metric_folder_ids['transit_access'],'New York_36_transit_census_tract_2022.csv')
+    housing_df = read_write_csv_from_drive(drive_service, metric_folder_ids['housing_units'],
+                                           'HousingDB_by_CommunityDistrict.csv')
+    school_cap_df = read_write_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],
+                                              'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
+    transit_df = read_write_csv_from_drive(drive_service, metric_folder_ids['transit_access'],
+                                           'New York_36_transit_census_tract_2022.csv')
     
-    # Process metrics
+    # Calculate suitability metrics
     housing_df['units_15_24'] = housing_df[['comp2015', 'comp2016', 'comp2017','comp2018','comp2019',
                                            'comp2020','comp2021','comp2022','comp2023','comp2024']].sum(axis=1)
     
@@ -166,9 +169,30 @@ def create_metrics():
     transit_df['JobAccess'] = transit_df['Weighted_average_total_jobs'].astype('int32')
     
     # Join metrics
-    final_data = final_data.merge(housing_df[['commntydst','units_15_24']], left_on='BoroCD',right_on='commntydst')
-    final_data = final_data.merge(school_cap_df[['Geo Dist','SchoolCapacity']], left_on='SchoolDist',right_on='Geo Dist')
-    final_data = final_data.merge(transit_df[['Census ID','JobAccess']][transit_df['Threshold'] == 45], left_on='CensusID',right_on='Census ID')
+    final_data = final_data.merge(housing_df[['commntydst','units_15_24']], 
+                                  left_on='BoroCD',right_on='commntydst')
+    final_data = final_data.merge(school_cap_df[['Geo Dist','SchoolCapacity']], 
+                                  left_on='SchoolDist',right_on='Geo Dist')
+    final_data = final_data.merge(transit_df[['Census ID','JobAccess']][transit_df['Threshold'] == 45], 
+                                  left_on='CensusID',right_on='Census ID')
+
+    # Create borough and interpretable district names
+    final_data['boro'] = 'Unknown'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '1') , 'boro'] = 'Manhattan'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '2') , 'boro'] = 'Bronx'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '3') , 'boro'] = 'Brooklyn'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '4') , 'boro'] = 'Queens'
+    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '5') , 'boro'] = 'Staten Island'
+    final_data['interpretable_district'] = ''
+    final_data['interpretable_district'] = (
+        final_data['boro'] + ' Community District ' + final_data['BoroCD'].astype('str').str[1:3]
+    )
+    final_data['boro_district_number'] = final_data['BoroCD'].astype('str').str[1:3].astype('int')
+
+    # Calculate ranks
+    final_data['rank_units_15_24'] = final_data['units_15_24'].rank(method='min',ascending=False)
+    final_data['rank_JobAccess'] = final_data['JobAccess'].rank(method='min',ascending=False)
+    final_data['rank_SchoolCapacity'] = final_data['SchoolCapacity'].rank(method='min',ascending=False)
     
     # Tertiles
     final_data['tertile_units_15_24'] = pd.qcut(final_data['units_15_24'],q=3,labels=[3,2,1]).astype('int32')
@@ -191,24 +215,6 @@ def create_metrics():
     final_data['HousingReadyDistrict2'] = 'No'
     final_data.loc[(final_data['SchoolEnrollmentStatus'] == 'Under enrolled') & 
                    (final_data['JobAccessRating'].isin(['Medium','High','Very High'])), 'HousingReadyDistrict2'] = 'Yes'
-
-    # Ranks
-    final_data['rank_units_15_24'] = final_data['units_15_24'].rank(method='min',ascending=False)
-    final_data['rank_JobAccess'] = final_data['JobAccess'].rank(method='min',ascending=False)
-    final_data['rank_SchoolCapacity'] = final_data['SchoolCapacity'].rank(method='min',ascending=False)
-
-    # Boro and interpretable district name
-    final_data['boro'] = 'Unknown'
-    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '1') , 'boro'] = 'Manhattan'
-    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '2') , 'boro'] = 'Bronx'
-    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '3') , 'boro'] = 'Brooklyn'
-    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '4') , 'boro'] = 'Queens'
-    final_data.loc[(final_data['BoroCD'].astype('str').str[0] == '5') , 'boro'] = 'Staten Island'
-    final_data['interpretable_district'] = 'Unknown'
-    final_data['interpretable_district'] = final_data['boro'] + ' Community District ' + final_data['BoroCD'].astype('str').str[1:3]
-
-    # Boro district number
-    final_data['boro_district_number'] = final_data['BoroCD'].astype('str').str[1:3].astype('int')
 
     # Process timestamp
     final_data['data_process_dt'] = datetime.now()
