@@ -164,7 +164,7 @@ def create_metrics():
     housing_df['units_15_24'] = housing_df[['comp2015', 'comp2016', 'comp2017','comp2018','comp2019',
                                            'comp2020','comp2021','comp2022','comp2023','comp2024']].sum(axis=1)
     
-    school_cap_df['SchoolCapacity'] = school_cap_df['Target Bldg Cap'] - school_cap_df['Bldg Enroll']
+    school_cap_df['SchoolCapacity'] = school_cap_df['Org Target Cap'] - school_cap_df['Org Enroll']
     
     transit_df['JobAccess'] = transit_df['Weighted_average_total_jobs'].astype('int32')
     
