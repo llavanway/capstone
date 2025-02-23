@@ -47,7 +47,7 @@ FILE_CONFIG = {
         'folder_id': '1mVIjaxCs_KZeirJbVP97AE4CHp_KcwXK'
     },
     'school_capacity': {
-        'url':'https://data.cityofnewyork.us/api/views/gkd7-3vk7/rows.csv?query=SELECT%0A%20%20%60geo_dist%60%2C%0A%20%20sum(%60bldg_enroll%60)%20AS%20%60sum_bldg_enroll%60%2C%0A%20%20sum(%60target_bldg_cap%60)%20AS%20%60sum_target_bldg_cap%60%0AGROUP%20BY%20%60geo_dist%60&fourfour=gkd7-3vk7&read_from_nbe=true&version=2.1&cacheBust=1704903561&date=20250213&accessType=DOWNLOAD',
+        'url':'https://data.cityofnewyork.us/api/views/gkd7-3vk7/rows.csv?query=SELECT%0A%20%20%60geo_dist%60%2C%0A%20%20sum(%60org_enroll%60)%20AS%20%60sum_org_enroll%60%2C%0A%20%20sum(%60org_target_cap%60)%20AS%20%60sum_org_target_cap%60%0AWHERE%20%60data_as_of%60%20%3E%20%222023-01-02T13%3A15%3A57%22%20%3A%3A%20floating_timestamp%0AGROUP%20BY%20%60geo_dist%60&fourfour=gkd7-3vk7&read_from_nbe=true&version=2.1&cacheBust=1704903561&date=20250223&accessType=DOWNLOAD',
         'folder_id': '111_3XXJ8kIT4Ts-1IEPJKf0UDx6TOJNs'
     }
 }
