@@ -156,7 +156,7 @@ def create_metrics():
     housing_df = read_write_csv_from_drive(drive_service, metric_folder_ids['housing_units'],
                                            'HousingDB_by_CommunityDistrict.csv')
     school_cap_df = read_write_csv_from_drive(drive_service, metric_folder_ids['school_capacity'],
-                                              'Enrollment_Capacity_And_Utilization_Reports_20250213.csv')
+                                              'Enrollment_Capacity_And_Utilization_Reports_20250223.csv')
     transit_df = read_write_csv_from_drive(drive_service, metric_folder_ids['transit_access'],
                                            'New York_36_transit_census_tract_2022.csv')
     
